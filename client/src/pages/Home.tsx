@@ -54,7 +54,7 @@ export default function Home() {
         {/* Master KPIs */}
         <section className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {isLoadingKpis ? (
+            {isLoadingKpis || !kpis ? (
               <>
                 <Skeleton className="h-40 rounded-2xl" />
                 <Skeleton className="h-40 rounded-2xl" />
@@ -64,27 +64,27 @@ export default function Home() {
               <>
                 <KpiCard 
                   title="Credit Portfolio" 
-                  value={`$${kpis?.creditPortfolio.currentValue.toLocaleString()}`} 
-                  trend={`${(((kpis?.creditPortfolio.currentValue - kpis?.creditPortfolio.lastMonthValue) / kpis?.creditPortfolio.lastMonthValue) * 100).toFixed(1)}%`}
-                  trendUp={kpis?.creditPortfolio.currentValue > kpis?.creditPortfolio.lastMonthValue}
+                  value={`$${kpis.creditPortfolio.currentValue.toLocaleString()}`} 
+                  trend={`${(((kpis.creditPortfolio.currentValue - kpis.creditPortfolio.lastMonthValue) / kpis.creditPortfolio.lastMonthValue) * 100).toFixed(1)}%`}
+                  trendUp={kpis.creditPortfolio.currentValue > kpis.creditPortfolio.lastMonthValue}
                   icon={<Briefcase className="w-6 h-6" />}
                   className="bg-white border-l-4 border-l-primary"
                   delay={100}
                 />
                 <KpiCard 
                   title="Active Clients" 
-                  value={kpis?.activeClients.currentValue} 
-                  trend={`${kpis?.activeClients.currentValue - kpis?.activeClients.lastMonthValue} new`}
-                  trendUp={kpis?.activeClients.currentValue > kpis?.activeClients.lastMonthValue}
+                  value={kpis.activeClients.currentValue} 
+                  trend={`${kpis.activeClients.currentValue - kpis.activeClients.lastMonthValue} new`}
+                  trendUp={kpis.activeClients.currentValue > kpis.activeClients.lastMonthValue}
                   icon={<Users className="w-6 h-6" />}
                   className="bg-white border-l-4 border-l-secondary"
                   delay={200}
                 />
                 <KpiCard 
                   title="Delinquency Rate" 
-                  value={`${(kpis?.delinquencyRate.currentValue * 100).toFixed(1)}%`} 
-                  trend={`${Math.abs((kpis?.delinquencyRate.currentValue - kpis?.delinquencyRate.lastMonthValue) * 100).toFixed(1)}%`}
-                  trendUp={kpis?.delinquencyRate.currentValue < kpis?.delinquencyRate.lastMonthValue} // Down is good
+                  value={`${(kpis.delinquencyRate.currentValue * 100).toFixed(1)}%`} 
+                  trend={`${Math.abs((kpis.delinquencyRate.currentValue - kpis.delinquencyRate.lastMonthValue) * 100).toFixed(1)}%`}
+                  trendUp={kpis.delinquencyRate.currentValue < kpis.delinquencyRate.lastMonthValue} // Down is good
                   icon={<AlertTriangle className="w-6 h-6" />}
                   className="bg-white border-l-4 border-l-red-500"
                   delay={300}
