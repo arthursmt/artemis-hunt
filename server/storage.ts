@@ -1,38 +1,36 @@
-import { type User, type InsertUser } from "@shared/schema";
-import { randomUUID } from "crypto";
 
-// modify the interface with any CRUD methods
-// you might need
+import { db } from "./db";
+import {
+  proposals,
+  contracts,
+  type InsertProposal,
+  type InsertContract,
+  type Proposal,
+  type Contract
+} from "@shared/schema";
 
 export interface IStorage {
-  getUser(id: string): Promise<User | undefined>;
-  getUserByUsername(username: string): Promise<User | undefined>;
-  createUser(user: InsertUser): Promise<User>;
+  getProposals(): Promise<Proposal[]>;
+  createProposal(proposal: InsertProposal): Promise<Proposal>;
+  getContracts(): Promise<Contract[]>;
 }
 
-export class MemStorage implements IStorage {
-  private users: Map<string, User>;
-
-  constructor() {
-    this.users = new Map();
+export class DatabaseStorage implements IStorage {
+  async getProposals(): Promise<Proposal[]> {
+    return await db.select().from(proposals);
   }
 
-  async getUser(id: string): Promise<User | undefined> {
-    return this.users.get(id);
+  async createProposal(proposal: InsertProposal): Promise<Proposal> {
+    const [newProposal] = await db
+      .insert(proposals)
+      .values(proposal)
+      .returning();
+    return newProposal;
   }
 
-  async getUserByUsername(username: string): Promise<User | undefined> {
-    return Array.from(this.users.values()).find(
-      (user) => user.username === username,
-    );
-  }
-
-  async createUser(insertUser: InsertUser): Promise<User> {
-    const id = randomUUID();
-    const user: User = { ...insertUser, id };
-    this.users.set(id, user);
-    return user;
+  async getContracts(): Promise<Contract[]> {
+    return await db.select().from(contracts);
   }
 }
 
-export const storage = new MemStorage();
+export const storage = new DatabaseStorage();

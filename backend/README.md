@@ -1,0 +1,1 @@
+This folder will later contain a Node.js backend. For now, the app uses mock data in the frontend.
