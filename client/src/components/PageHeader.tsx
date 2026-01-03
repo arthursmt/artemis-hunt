@@ -12,12 +12,12 @@ export function PageHeader() {
             <Menu className="w-6 h-6" />
           </Button>
           <div className="flex items-center gap-3">
-            <div className="h-10 w-10 relative overflow-hidden rounded-lg bg-blue-50 flex items-center justify-center border border-blue-100">
-              <img src={logo} alt="Artemis Hunting" className="h-8 w-auto object-contain" />
+            <div className="h-10 w-10 relative overflow-hidden rounded-lg bg-white flex items-center justify-center border border-slate-100 shadow-sm">
+              <img src={logo} alt="Artemis Hunting" className="h-full w-full object-contain p-1" />
             </div>
             <div>
               <h1 className="text-xl font-display font-bold text-slate-900 leading-none">Artemis</h1>
-              <p className="text-xs text-slate-500 font-medium tracking-wide">HUNTING MPP</p>
+              <p className="text-xs text-slate-500 font-medium tracking-wide">HUNTING MVP</p>
             </div>
           </div>
         </div>

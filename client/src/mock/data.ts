@@ -1,9 +1,25 @@
 import { Proposal, Contract } from "@shared/schema";
 
-export const MOCK_KPIS = {
-  creditPortfolio: 450000,
-  activeClients: 124,
-  delinquencyRate: "2.4%",
+export const masterKpis = {
+  creditPortfolio: {
+    label: "Credit Portfolio",
+    currentValue: 450000,
+    lastMonthValue: 400000,
+  },
+  activeClients: {
+    label: "Active Clients",
+    currentValue: 124,
+    lastMonthValue: 120,
+  },
+  delinquencyRate: {
+    label: "Delinquency Rate",
+    currentValue: 0.024, // 2.4%
+    lastMonthValue: 0.026, // 2.6%
+  },
+  monthlyGoal: {
+    targetDisbursement: 600000,
+    achievedDisbursement: 390000, // → 65% of the target
+  },
 };
 
 export const MOCK_PROPOSALS: Proposal[] = [
