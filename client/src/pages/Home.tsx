@@ -12,7 +12,7 @@ import {
   AlertTriangle, 
   Plus, 
   FileText, 
-  ClipboardList, 
+  Search,
   CheckCircle2, 
   RefreshCcw, 
   AlertCircle 
@@ -67,6 +67,8 @@ export default function Home() {
                   value={`$${kpis.creditPortfolio.currentValue.toLocaleString()}`} 
                   trend={`${(((kpis.creditPortfolio.currentValue - kpis.creditPortfolio.lastMonthValue) / kpis.creditPortfolio.lastMonthValue) * 100).toFixed(1)}%`}
                   trendUp={kpis.creditPortfolio.currentValue > kpis.creditPortfolio.lastMonthValue}
+                  progressPercent={kpis.creditPortfolio.progressPercent}
+                  status={kpis.creditPortfolio.status as "on_track" | "at_risk"}
                   icon={<Briefcase className="w-6 h-6" />}
                   className="bg-white border-l-4 border-l-primary"
                   delay={100}
@@ -76,6 +78,8 @@ export default function Home() {
                   value={kpis.activeClients.currentValue} 
                   trend={`${kpis.activeClients.currentValue - kpis.activeClients.lastMonthValue} new`}
                   trendUp={kpis.activeClients.currentValue > kpis.activeClients.lastMonthValue}
+                  progressPercent={kpis.activeClients.progressPercent}
+                  status={kpis.activeClients.status as "on_track" | "at_risk"}
                   icon={<Users className="w-6 h-6" />}
                   className="bg-white border-l-4 border-l-secondary"
                   delay={200}
@@ -85,6 +89,8 @@ export default function Home() {
                   value={`${(kpis.delinquencyRate.currentValue * 100).toFixed(1)}%`} 
                   trend={`${Math.abs((kpis.delinquencyRate.currentValue - kpis.delinquencyRate.lastMonthValue) * 100).toFixed(1)}%`}
                   trendUp={kpis.delinquencyRate.currentValue < kpis.delinquencyRate.lastMonthValue} // Down is good
+                  progressPercent={kpis.delinquencyRate.progressPercent}
+                  status={kpis.delinquencyRate.status as "on_track" | "at_risk"}
                   icon={<AlertTriangle className="w-6 h-6" />}
                   className="bg-white border-l-4 border-l-red-500"
                   delay={300}
@@ -92,35 +98,6 @@ export default function Home() {
               </>
             )}
           </div>
-
-          {/* Monthly Goal Progress */}
-          {!isLoadingKpis && kpis?.monthlyGoal && (
-            <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm animate-in fade-in slide-in-from-bottom-4 duration-700 delay-500">
-              <div className="flex justify-between items-center mb-4">
-                <div>
-                  <h4 className="font-display font-bold text-slate-900">Monthly Disbursement Goal</h4>
-                  <p className="text-sm text-slate-500">Target: ${kpis.monthlyGoal.targetDisbursement.toLocaleString()}</p>
-                </div>
-                <div className="text-right">
-                  <span className="text-2xl font-bold text-primary">
-                    {Math.round((kpis.monthlyGoal.achievedDisbursement / kpis.monthlyGoal.targetDisbursement) * 100)}%
-                  </span>
-                  <p className="text-xs text-slate-500 font-medium uppercase tracking-wider">Achieved</p>
-                </div>
-              </div>
-              <div className="h-3 w-full bg-slate-100 rounded-full overflow-hidden">
-                <div 
-                  className="h-full bg-primary transition-all duration-1000 ease-out"
-                  style={{ width: `${(kpis.monthlyGoal.achievedDisbursement / kpis.monthlyGoal.targetDisbursement) * 100}%` }}
-                />
-              </div>
-              <div className="mt-4 flex justify-between text-xs font-medium text-slate-500">
-                <span>$0</span>
-                <span>Current: ${kpis.monthlyGoal.achievedDisbursement.toLocaleString()}</span>
-                <span>Target: ${kpis.monthlyGoal.targetDisbursement.toLocaleString()}</span>
-              </div>
-            </div>
-          )}
         </section>
 
         {/* Pipeline Overview */}
@@ -148,7 +125,7 @@ export default function Home() {
                   count={evaluationCount} 
                   href="/under-evaluation" 
                   color="yellow"
-                  icon={<ClipboardList className="w-6 h-6" />}
+                  icon={<Search className="w-6 h-6" />}
                   delay={200}
                 />
                 <PipelineCard 

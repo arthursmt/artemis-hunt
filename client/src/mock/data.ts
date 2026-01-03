@@ -5,20 +5,25 @@ export const masterKpis = {
     label: "Credit Portfolio",
     currentValue: 450000,
     lastMonthValue: 400000,
+    targetValue: 600000,
+    progressPercent: 65, // 65% of target
+    status: "on_track",  // good running rate, not completed yet
   },
   activeClients: {
     label: "Active Clients",
     currentValue: 124,
     lastMonthValue: 120,
+    targetValue: 180,
+    progressPercent: 69, // 69% of target
+    status: "on_track",  // good running rate, close to completion
   },
   delinquencyRate: {
     label: "Delinquency Rate",
     currentValue: 0.024, // 2.4%
     lastMonthValue: 0.026, // 2.6%
-  },
-  monthlyGoal: {
-    targetDisbursement: 600000,
-    achievedDisbursement: 390000, // → 65% of the target
+    targetValue: 0.03,    // goal: stay at or below 3%
+    progressPercent: 80,  // 80% "goal health"
+    status: "at_risk",    // running behind / at risk of failing
   },
 };
 
