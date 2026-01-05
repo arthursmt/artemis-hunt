@@ -70,14 +70,50 @@ export default function NewProposalScreen() {
   };
 
   const handleAmountChange = (id: number, val: string) => {
-    // We only want digits
-    const digits = val.replace(/\D/g, "");
-    // Limit to 50,000 (represented as 5000000 in cents)
-    const numericValue = parseInt(digits) || 0;
-    const cappedValue = Math.min(numericValue, 5000000);
+    // Let user type freely, just remove characters that are not digits or decimal point
+    const cleanValue = val.replace(/[^0-9.]/g, "");
     
-    // Store as plain number string (cents or decimal, but let's stick to what we need for display)
-    updateMember(id, "requestedAmount", (cappedValue / 100).toString());
+    // We update the state with the raw string so the user can see what they type
+    updateMember(id, "requestedAmount", cleanValue);
+  };
+
+  const handleAmountBlur = (id: number) => {
+    const member = members.find(m => m.id === id);
+    if (!member || !member.requestedAmount) return;
+
+    const num = parseFloat(member.requestedAmount);
+    if (isNaN(num)) return;
+
+    // We don't change the value here, validation will handle the limit
+  };
+
+  const handleRemoveMember = (id: number, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (members.length === 1) {
+      toast({
+        title: "Action blocked",
+        description: "Group must have at least one member.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const member = members.find(m => m.id === id);
+    const hasData = member && (
+      !!member.firstName ||
+      !!member.lastName ||
+      !!member.requestedAmount ||
+      !!member.documentType ||
+      !!member.documentNumber
+    );
+
+    if (!hasData || window.confirm("Are you sure you want to remove this member from the group?")) {
+      const newMembers = members.filter((m) => m.id !== id);
+      setMembers(newMembers);
+      if (activeMemberId === id) {
+        setActiveMemberId(newMembers[0].id);
+      }
+    }
   };
 
   const handleAddMember = () => {
@@ -92,26 +128,6 @@ export default function NewProposalScreen() {
     };
     setMembers([...members, newMember]);
     setActiveMemberId(newMember.id);
-  };
-
-  const handleRemoveMember = (id: number, e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (members.length === 1) {
-      toast({
-        title: "Action blocked",
-        description: "Group must have at least one member.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    if (window.confirm("Are you sure you want to remove this member from the group?")) {
-      const newMembers = members.filter((m) => m.id !== id);
-      setMembers(newMembers);
-      if (activeMemberId === id) {
-        setActiveMemberId(newMembers[0].id);
-      }
-    }
   };
 
   const updateMember = (id: number, field: keyof Member, value: string) => {
@@ -339,9 +355,15 @@ export default function NewProposalScreen() {
                     type="text"
                     placeholder="$ 0.00" 
                     className={cn("h-12 text-lg font-mono", activeMember.errors?.requestedAmount && "border-red-500 focus-visible:ring-red-500")}
-                    value={formatCurrency(activeMember.requestedAmount)}
+                    value={activeMember.requestedAmount}
                     onChange={(e) => handleAmountChange(activeMember.id, e.target.value)}
+                    onBlur={() => handleAmountBlur(activeMember.id)}
                   />
+                  {!activeMember.errors?.requestedAmount && activeMember.requestedAmount && (
+                    <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">
+                      {formatCurrency(activeMember.requestedAmount)}
+                    </p>
+                  )}
                   {activeMember.errors?.requestedAmount && (
                     <p className="text-[10px] text-red-500 font-bold uppercase tracking-wider">{activeMember.errors.requestedAmount}</p>
                   )}
@@ -357,9 +379,13 @@ export default function NewProposalScreen() {
                       <SelectTrigger className={cn("h-12 bg-white", activeMember.errors?.documentType && "border-red-500 focus-visible:ring-red-500")}>
                         <SelectValue placeholder="Select ID type" />
                       </SelectTrigger>
-                      <SelectContent className="bg-white border shadow-md">
+                      <SelectContent className="bg-white border shadow-md p-1">
                         {DOCUMENT_TYPES.map((type) => (
-                          <SelectItem key={type.value} value={type.value} className="focus:bg-slate-100 cursor-pointer">
+                          <SelectItem 
+                            key={type.value} 
+                            value={type.value} 
+                            className="focus:bg-primary/10 focus:text-primary cursor-pointer rounded-md transition-colors"
+                          >
                             {type.label}
                           </SelectItem>
                         ))}
