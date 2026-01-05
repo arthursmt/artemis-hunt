@@ -22,6 +22,8 @@ const colorMap = {
 };
 
 export function PipelineCard({ title, count, href, color, icon, delay = 0 }: PipelineCardProps) {
+  const hasActionDot = ["On Going", "Renewals", "Collections"].includes(title);
+
   return (
     <Link href={href}>
       <div 
@@ -32,9 +34,12 @@ export function PipelineCard({ title, count, href, color, icon, delay = 0 }: Pip
           "animate-in zoom-in-95 duration-500 h-full",
         )}>
           <Card className={cn(
-            "h-full border-2 transition-all duration-300 flex flex-col justify-between hover:shadow-lg hover:-translate-y-1",
+            "h-full border-2 transition-all duration-300 flex flex-col justify-between hover:shadow-lg hover:-translate-y-1 relative",
             colorMap[color]
           )}>
+            {hasActionDot && (
+              <div className="absolute top-4 left-4 w-2 h-2 bg-amber-500 rounded-full z-10" />
+            )}
             <CardContent className="p-6">
               <div className="flex justify-between items-start mb-4">
                 <div className="p-3 rounded-xl bg-white/60 backdrop-blur-sm shadow-sm">

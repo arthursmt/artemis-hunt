@@ -32,12 +32,6 @@ export function KpiCard({ title, value, trend, trendUp, progressPercent, status,
             <div className="space-y-1">
               <div className="flex items-center gap-2">
                 <p className="text-sm font-medium text-muted-foreground uppercase tracking-wider">{title}</p>
-                {status && (
-                  <div className={cn(
-                    "w-2 h-2 rounded-full",
-                    status === "on_track" ? "bg-green-500" : "bg-yellow-500"
-                  )} />
-                )}
               </div>
               <h3 className="text-3xl font-display font-bold text-slate-900 mt-2">{value}</h3>
             </div>

@@ -1,7 +1,7 @@
 import logo from "@assets/Artemis_Logo_Slogan_1767398341449.png";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { Bell, Search, Menu } from "lucide-react";
+import { Bell, Search, Menu, ClipboardList } from "lucide-react";
 
 export function PageHeader() {
   return (
@@ -31,6 +31,11 @@ export function PageHeader() {
               className="bg-transparent border-none text-sm focus:outline-none w-48 text-slate-700 placeholder:text-slate-400"
             />
           </div>
+
+          <Button variant="ghost" size="icon" className="relative text-slate-500 hover:text-primary hover:bg-blue-50">
+            <ClipboardList className="w-5 h-5" />
+            <span className="absolute top-2 right-2 w-2 h-2 bg-amber-500 rounded-full border-2 border-white"></span>
+          </Button>
 
           <Button variant="ghost" size="icon" className="relative text-slate-500 hover:text-primary hover:bg-blue-50">
             <Bell className="w-5 h-5" />
