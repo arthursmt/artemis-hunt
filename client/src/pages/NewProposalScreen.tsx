@@ -52,9 +52,10 @@ export default function NewProposalScreen() {
   const activeMember = members.find((m) => m.id === activeMemberId) || members[0];
 
   const validateName = (name: string) => {
-    if (!name) return true; // Handled by required
-    // Allow Unicode letters and spaces, but not starting with a space, and no digits/symbols
-    const regex = /^\p{L}[\p{L}\s]*$/u;
+    if (!name) return true;
+    // Simple but effective: must start with letter, only letters and spaces
+    // Using a range that covers most accented characters without fancy unicode props
+    const regex = /^[a-zA-Z\u00C0-\u017F][a-zA-Z\u00C0-\u017F\s]*$/;
     return regex.test(name);
   };
 
