@@ -70,36 +70,47 @@ export default function NewProposalScreen() {
   };
 
   const handleAmountChange = (id: number, val: string) => {
-    // Let user type freely, just remove characters that are not digits or decimal point
-    const cleanValue = val.replace(/[^0-9.]/g, "");
+    // 1. Strip all non-digit characters from the raw input string.
+    const digits = val.replace(/\D/g, "");
     
-    // We update the state with the raw string so the user can see what they type
-    updateMember(id, "requestedAmount", cleanValue);
-  };
-
-  const handleAmountBlur = (id: number) => {
-    const member = members.find(m => m.id === id);
-    if (!member || !member.requestedAmount) return;
-
-    // Format the value inside the input on blur
-    const num = parseFloat(member.requestedAmount.replace(/[^0-9.]/g, ""));
-    if (isNaN(num)) return;
-
+    // 2. Interpret the resulting digits as cents (integer).
+    const cents = parseInt(digits) || 0;
+    
+    // 3. Compute the numeric value in dollars: amountInDollars = cents / 100.
+    const amountInDollars = (cents / 100).toString();
+    
+    // 4. Store this numeric value in component state for validation.
+    // 5. Format amountInDollars as a US currency string and set that as the input value.
     const formattedValue = new Intl.NumberFormat('en-US', {
       style: 'currency',
       currency: 'USD',
-    }).format(num);
+    }).format(cents / 100);
 
     updateMember(id, "requestedAmount", formattedValue);
   };
 
-  const handleAmountFocus = (id: number) => {
+  const handleAmountBlur = (id: number) => {
     const member = members.find(m => m.id === id);
-    if (!member || !member.requestedAmount) return;
+    if (!member) return;
 
-    // Remove formatting when focusing to allow easy editing
-    const cleanValue = member.requestedAmount.replace(/[^0-9.]/g, "");
-    updateMember(id, "requestedAmount", cleanValue);
+    // Numeric value in dollars
+    const digits = member.requestedAmount.replace(/\D/g, "");
+    const amountInDollars = (parseInt(digits) || 0) / 100;
+
+    let error = "";
+    if (amountInDollars <= 0) {
+      error = "Amount must be greater than 0";
+    } else if (amountInDollars > 50000) {
+      error = "Maximum loan amount is $50,000.00";
+    }
+
+    setMembers(prev => prev.map(m => 
+      m.id === id ? { ...m, errors: { ...m.errors, requestedAmount: error } } : m
+    ));
+  };
+
+  const handleAmountFocus = (id: number) => {
+    // Overriding previous behavior: we stay in formatted mode as we type now
   };
 
   const handleRemoveMember = (id: number, e: React.MouseEvent) => {
@@ -177,9 +188,9 @@ export default function NewProposalScreen() {
         isValid = false;
       }
 
-      const amountStr = m.requestedAmount.replace(/[^0-9.]/g, "");
-      const amount = parseFloat(amountStr);
-      if (!amountStr || isNaN(amount) || amount <= 0) {
+      const digits = m.requestedAmount.replace(/\D/g, "");
+      const amount = (parseInt(digits) || 0) / 100;
+      if (!digits || amount <= 0) {
         errors.requestedAmount = "Amount must be greater than 0";
         isValid = false;
       } else if (amount > 50000) {
@@ -369,12 +380,11 @@ export default function NewProposalScreen() {
                   <Label className="text-slate-900 font-semibold">Requested Amount ($)</Label>
                   <Input 
                     type="text"
-                    placeholder="$ 0.00" 
+                    placeholder="$0.00" 
                     className={cn("h-12 text-lg font-mono", activeMember.errors?.requestedAmount && "border-red-500 focus-visible:ring-red-500")}
                     value={activeMember.requestedAmount}
                     onChange={(e) => handleAmountChange(activeMember.id, e.target.value)}
                     onBlur={() => handleAmountBlur(activeMember.id)}
-                    onFocus={() => handleAmountFocus(activeMember.id)}
                   />
                   {activeMember.errors?.requestedAmount && (
                     <p className="text-[10px] text-red-500 font-bold uppercase tracking-wider">{activeMember.errors.requestedAmount}</p>
