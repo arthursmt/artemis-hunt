@@ -81,10 +81,25 @@ export default function NewProposalScreen() {
     const member = members.find(m => m.id === id);
     if (!member || !member.requestedAmount) return;
 
-    const num = parseFloat(member.requestedAmount);
+    // Format the value inside the input on blur
+    const num = parseFloat(member.requestedAmount.replace(/[^0-9.]/g, ""));
     if (isNaN(num)) return;
 
-    // We don't change the value here, validation will handle the limit
+    const formattedValue = new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+    }).format(num);
+
+    updateMember(id, "requestedAmount", formattedValue);
+  };
+
+  const handleAmountFocus = (id: number) => {
+    const member = members.find(m => m.id === id);
+    if (!member || !member.requestedAmount) return;
+
+    // Remove formatting when focusing to allow easy editing
+    const cleanValue = member.requestedAmount.replace(/[^0-9.]/g, "");
+    updateMember(id, "requestedAmount", cleanValue);
   };
 
   const handleRemoveMember = (id: number, e: React.MouseEvent) => {
@@ -162,12 +177,13 @@ export default function NewProposalScreen() {
         isValid = false;
       }
 
-      const amount = parseFloat(m.requestedAmount);
-      if (!m.requestedAmount || amount <= 0) {
+      const amountStr = m.requestedAmount.replace(/[^0-9.]/g, "");
+      const amount = parseFloat(amountStr);
+      if (!amountStr || isNaN(amount) || amount <= 0) {
         errors.requestedAmount = "Amount must be greater than 0";
         isValid = false;
       } else if (amount > 50000) {
-        errors.requestedAmount = "Maximum amount is $50,000.00";
+        errors.requestedAmount = "Maximum loan amount is $50,000.00";
         isValid = false;
       }
 
@@ -358,12 +374,8 @@ export default function NewProposalScreen() {
                     value={activeMember.requestedAmount}
                     onChange={(e) => handleAmountChange(activeMember.id, e.target.value)}
                     onBlur={() => handleAmountBlur(activeMember.id)}
+                    onFocus={() => handleAmountFocus(activeMember.id)}
                   />
-                  {!activeMember.errors?.requestedAmount && activeMember.requestedAmount && (
-                    <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">
-                      {formatCurrency(activeMember.requestedAmount)}
-                    </p>
-                  )}
                   {activeMember.errors?.requestedAmount && (
                     <p className="text-[10px] text-red-500 font-bold uppercase tracking-wider">{activeMember.errors.requestedAmount}</p>
                   )}
