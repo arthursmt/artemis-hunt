@@ -53,7 +53,8 @@ export default function NewProposalScreen() {
 
   const validateName = (name: string) => {
     if (!name) return true; // Handled by required
-    const regex = /^[a-zA-Z][a-zA-Z\s]*$/;
+    // Allow Unicode letters and spaces, but not starting with a space, and no digits/symbols
+    const regex = /^\p{L}[\p{L}\s]*$/u;
     return regex.test(name);
   };
 
