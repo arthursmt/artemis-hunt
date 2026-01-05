@@ -1,8 +1,8 @@
 import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Save, Plus, X } from "lucide-react";
+import { ArrowLeft, Save, Plus, X, AlertCircle } from "lucide-react";
 import { Link, useLocation } from "wouter";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { useCreateProposal } from "@/hooks/use-proposals";
 import { useToast } from "@/hooks/use-toast";
@@ -21,10 +21,13 @@ const DOCUMENT_TYPES = [
 
 interface Member {
   id: number;
-  name: string;
+  firstName: string;
+  middleName: string;
+  lastName: string;
   requestedAmount: string;
   documentType: string;
   documentNumber: string;
+  errors?: Record<string, string>;
 }
 
 export default function NewProposalScreen() {
@@ -36,7 +39,9 @@ export default function NewProposalScreen() {
   const [members, setMembers] = useState<Member[]>([
     {
       id: Date.now(),
-      name: "",
+      firstName: "",
+      middleName: "",
+      lastName: "",
       requestedAmount: "",
       documentType: "",
       documentNumber: "",
@@ -46,10 +51,41 @@ export default function NewProposalScreen() {
 
   const activeMember = members.find((m) => m.id === activeMemberId) || members[0];
 
+  const validateName = (name: string) => {
+    if (!name) return true; // Handled by required
+    const regex = /^[a-zA-Z][a-zA-Z\s]*$/;
+    return regex.test(name);
+  };
+
+  const formatCurrency = (val: string) => {
+    // Remove all non-digits
+    const cleanValue = val.replace(/\D/g, "");
+    if (!cleanValue) return "";
+    
+    const num = parseInt(cleanValue) / 100;
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+    }).format(num);
+  };
+
+  const handleAmountChange = (id: number, val: string) => {
+    // We only want digits
+    const digits = val.replace(/\D/g, "");
+    // Limit to 50,000 (represented as 5000000 in cents)
+    const numericValue = parseInt(digits) || 0;
+    const cappedValue = Math.min(numericValue, 5000000);
+    
+    // Store as plain number string (cents or decimal, but let's stick to what we need for display)
+    updateMember(id, "requestedAmount", (cappedValue / 100).toString());
+  };
+
   const handleAddMember = () => {
     const newMember: Member = {
       id: Date.now(),
-      name: "",
+      firstName: "",
+      middleName: "",
+      lastName: "",
       requestedAmount: "",
       documentType: "",
       documentNumber: "",
@@ -80,32 +116,84 @@ export default function NewProposalScreen() {
 
   const updateMember = (id: number, field: keyof Member, value: string) => {
     setMembers(
-      members.map((m) => (m.id === id ? { ...m, [field]: value } : m))
+      members.map((m) => (m.id === id ? { ...m, [field]: value, errors: { ...m.errors, [field]: "" } } : m))
     );
+  };
+
+  const validateAll = () => {
+    let isValid = true;
+    const newMembers = members.map(m => {
+      const errors: Record<string, string> = {};
+      
+      if (!m.firstName) {
+        errors.firstName = "First name is required";
+        isValid = false;
+      } else if (!validateName(m.firstName)) {
+        errors.firstName = "Only letters and spaces allowed (cannot start with space)";
+        isValid = false;
+      }
+
+      if (m.middleName && !validateName(m.middleName)) {
+        errors.middleName = "Only letters and spaces allowed";
+        isValid = false;
+      }
+
+      if (!m.lastName) {
+        errors.lastName = "Last name is required";
+        isValid = false;
+      } else if (!validateName(m.lastName)) {
+        errors.lastName = "Only letters and spaces allowed (cannot start with space)";
+        isValid = false;
+      }
+
+      const amount = parseFloat(m.requestedAmount);
+      if (!m.requestedAmount || amount <= 0) {
+        errors.requestedAmount = "Amount must be greater than 0";
+        isValid = false;
+      } else if (amount > 50000) {
+        errors.requestedAmount = "Maximum amount is $50,000.00";
+        isValid = false;
+      }
+
+      if (!m.documentType) {
+        errors.documentType = "Document type is required";
+        isValid = false;
+      }
+
+      if (!m.documentNumber) {
+        errors.documentNumber = "Document number is required";
+        isValid = false;
+      }
+
+      return { ...m, errors };
+    });
+
+    setMembers(newMembers);
+    return isValid;
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!validateAll()) {
+      toast({
+        title: "Validation Error",
+        description: "Please check all members for missing or invalid fields.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     const payload = {
       type: proposalType,
       members: proposalType === "individual" ? [members[0]] : members,
     };
     
-    console.log("Submitting proposal payload:", payload);
+    // Store in session for the next screen
+    sessionStorage.setItem("pending_proposal", JSON.stringify(payload));
     
-    createProposal.mutate({
-      clientName: payload.members[0].name || "New Proposal",
-      amount: payload.members[0].requestedAmount || "0",
-      status: "on_going",
-    }, {
-      onSuccess: () => {
-        toast({
-          title: "Success",
-          description: "New proposal created successfully.",
-        });
-        setLocation("/");
-      }
-    });
+    // Navigate to validation screen
+    setLocation("/credit-validation");
   };
 
   return (
@@ -147,7 +235,10 @@ export default function NewProposalScreen() {
             </button>
             <button
               type="button"
-              onClick={() => setProposalType("individual")}
+              onClick={() => {
+                setProposalType("individual");
+                setActiveMemberId(members[0].id);
+              }}
               className={cn(
                 "px-6 py-2 rounded-lg text-sm font-semibold transition-all",
                 proposalType === "individual" 
@@ -173,7 +264,12 @@ export default function NewProposalScreen() {
                     : "text-slate-500 border-transparent hover:text-slate-700"
                 )}
               >
-                <span>Member {index + 1}</span>
+                <div className="flex items-center gap-2">
+                  <span>Member {index + 1}</span>
+                  {Object.values(member.errors || {}).some(e => e) && (
+                    <AlertCircle className="w-3 h-3 text-red-500" />
+                  )}
+                </div>
                 {members.length > 1 && (
                   <X 
                     className="h-3 w-3 hover:text-red-500 transition-colors" 
@@ -197,27 +293,58 @@ export default function NewProposalScreen() {
           <CardContent className="p-8">
             <form onSubmit={handleSubmit} className="space-y-6">
               <div className="space-y-6 animate-in fade-in slide-in-from-right-2 duration-300">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <Label className="text-slate-900 font-semibold">First Name</Label>
+                    <Input 
+                      placeholder="e.g. Maria" 
+                      className={cn("h-12", activeMember.errors?.firstName && "border-red-500 focus-visible:ring-red-500")}
+                      value={activeMember.firstName}
+                      onChange={(e) => updateMember(activeMember.id, "firstName", e.target.value)}
+                    />
+                    {activeMember.errors?.firstName && (
+                      <p className="text-[10px] text-red-500 font-bold uppercase tracking-wider">{activeMember.errors.firstName}</p>
+                    )}
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-slate-900 font-semibold">Last Name</Label>
+                    <Input 
+                      placeholder="e.g. Silva" 
+                      className={cn("h-12", activeMember.errors?.lastName && "border-red-500 focus-visible:ring-red-500")}
+                      value={activeMember.lastName}
+                      onChange={(e) => updateMember(activeMember.id, "lastName", e.target.value)}
+                    />
+                    {activeMember.errors?.lastName && (
+                      <p className="text-[10px] text-red-500 font-bold uppercase tracking-wider">{activeMember.errors.lastName}</p>
+                    )}
+                  </div>
+                </div>
+
                 <div className="space-y-2">
-                  <Label className="text-slate-900 font-semibold">Client Name</Label>
+                  <Label className="text-slate-900 font-semibold">Middle Name (optional)</Label>
                   <Input 
-                    placeholder="e.g. Maria Silva" 
-                    className="h-12 text-lg" 
-                    value={activeMember.name}
-                    onChange={(e) => updateMember(activeMember.id, "name", e.target.value)}
-                    required
+                    placeholder="e.g. Mercedes" 
+                    className={cn("h-12", activeMember.errors?.middleName && "border-red-500 focus-visible:ring-red-500")}
+                    value={activeMember.middleName}
+                    onChange={(e) => updateMember(activeMember.id, "middleName", e.target.value)}
                   />
+                  {activeMember.errors?.middleName && (
+                    <p className="text-[10px] text-red-500 font-bold uppercase tracking-wider">{activeMember.errors.middleName}</p>
+                  )}
                 </div>
 
                 <div className="space-y-2">
                   <Label className="text-slate-900 font-semibold">Requested Amount ($)</Label>
                   <Input 
-                    type="number" 
-                    placeholder="0.00" 
-                    className="h-12 text-lg font-mono" 
-                    value={activeMember.requestedAmount}
-                    onChange={(e) => updateMember(activeMember.id, "requestedAmount", e.target.value)}
-                    required
+                    type="text"
+                    placeholder="$ 0.00" 
+                    className={cn("h-12 text-lg font-mono", activeMember.errors?.requestedAmount && "border-red-500 focus-visible:ring-red-500")}
+                    value={formatCurrency(activeMember.requestedAmount)}
+                    onChange={(e) => handleAmountChange(activeMember.id, e.target.value)}
                   />
+                  {activeMember.errors?.requestedAmount && (
+                    <p className="text-[10px] text-red-500 font-bold uppercase tracking-wider">{activeMember.errors.requestedAmount}</p>
+                  )}
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -227,28 +354,33 @@ export default function NewProposalScreen() {
                       value={activeMember.documentType} 
                       onValueChange={(val) => updateMember(activeMember.id, "documentType", val)}
                     >
-                      <SelectTrigger className="h-12">
+                      <SelectTrigger className={cn("h-12 bg-white", activeMember.errors?.documentType && "border-red-500 focus-visible:ring-red-500")}>
                         <SelectValue placeholder="Select ID type" />
                       </SelectTrigger>
-                      <SelectContent>
+                      <SelectContent className="bg-white border shadow-md">
                         {DOCUMENT_TYPES.map((type) => (
-                          <SelectItem key={type.value} value={type.value}>
+                          <SelectItem key={type.value} value={type.value} className="focus:bg-slate-100 cursor-pointer">
                             {type.label}
                           </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
+                    {activeMember.errors?.documentType && (
+                      <p className="text-[10px] text-red-500 font-bold uppercase tracking-wider">{activeMember.errors.documentType}</p>
+                    )}
                   </div>
 
                   <div className="space-y-2">
                     <Label className="text-slate-900 font-semibold">Document Number</Label>
                     <Input 
                       placeholder="Enter number" 
-                      className="h-12" 
+                      className={cn("h-12", activeMember.errors?.documentNumber && "border-red-500 focus-visible:ring-red-500")}
                       value={activeMember.documentNumber}
                       onChange={(e) => updateMember(activeMember.id, "documentNumber", e.target.value)}
-                      required
                     />
+                    {activeMember.errors?.documentNumber && (
+                      <p className="text-[10px] text-red-500 font-bold uppercase tracking-wider">{activeMember.errors.documentNumber}</p>
+                    )}
                   </div>
                 </div>
               </div>
@@ -260,13 +392,8 @@ export default function NewProposalScreen() {
                 <Button 
                   type="submit" 
                   className="w-full h-12 bg-primary hover:bg-primary/90 text-white font-semibold shadow-lg shadow-primary/20"
-                  disabled={createProposal.isPending}
                 >
-                  {createProposal.isPending ? "Creating..." : (
-                    <>
-                      <Save className="w-4 h-4 mr-2" /> Create Proposal
-                    </>
-                  )}
+                  <Save className="w-4 h-4 mr-2" /> Create Proposal
                 </Button>
               </div>
             </form>
