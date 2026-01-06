@@ -245,6 +245,7 @@ export default function CreditValidationScreen() {
           <Button 
             className="flex-1 h-12 bg-primary hover:bg-primary/90 text-white font-semibold shadow-lg shadow-primary/20"
             disabled={!canContinue}
+            onClick={() => setLocation("/product-config")}
           >
             Continue to Product Config
           </Button>

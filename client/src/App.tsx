@@ -14,6 +14,7 @@ import RenewalsScreen from "@/pages/RenewalsScreen";
 import CollectionsScreen from "@/pages/CollectionsScreen";
 import NewProposalScreen from "@/pages/NewProposalScreen";
 import CreditValidationScreen from "@/pages/CreditValidationScreen";
+import ProductConfigScreen from "@/pages/ProductConfigScreen";
 
 function Router() {
   return (
@@ -26,6 +27,7 @@ function Router() {
       <Route path="/collections" component={CollectionsScreen} />
       <Route path="/new-proposal" component={NewProposalScreen} />
       <Route path="/credit-validation" component={CreditValidationScreen} />
+      <Route path="/product-config" component={ProductConfigScreen} />
       
       {/* Fallback to 404 */}
       <Route component={NotFound} />
