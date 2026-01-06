@@ -94,7 +94,7 @@ export default function ProductConfigScreen() {
 
     const leader = group.members.find(m => m.id === group.leaderId) || group.members[0];
     const totalAmount = group.members.reduce((sum, m) => {
-      const digits = m.requestedAmount.replace(/\D/g, "");
+      const digits = String(m.requestedAmount).replace(/\D/g, "");
       return sum + (parseInt(digits) || 0) / 100;
     }, 0);
 
@@ -111,7 +111,7 @@ export default function ProductConfigScreen() {
       data: {
         group: group
       }
-    });
+    } as any);
 
     toast({
       title: "Proposal Saved",

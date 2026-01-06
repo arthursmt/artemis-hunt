@@ -38,9 +38,10 @@ export const ProposalProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   const saveProposal = (proposal: ProposalWithData) => {
     setProposals(prev => {
-      const exists = prev.find(p => p.id === proposal.id);
+      const proposalId = String(proposal.id);
+      const exists = prev.find(p => String(p.id) === proposalId);
       if (exists) {
-        return prev.map(p => p.id === proposal.id ? proposal : p);
+        return prev.map(p => String(p.id) === proposalId ? proposal : p);
       }
       return [...prev, proposal];
     });
