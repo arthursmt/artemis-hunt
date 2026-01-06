@@ -1,5 +1,5 @@
 import { useKpis } from "@/hooks/use-kpis";
-import { useProposals } from "@/hooks/use-proposals";
+import { useProposalStore } from "@/lib/proposalStore";
 import { useContracts } from "@/hooks/use-contracts";
 import { PageHeader } from "@/components/PageHeader";
 import { KpiCard } from "@/components/KpiCard";
@@ -21,13 +21,13 @@ import { Skeleton } from "@/components/ui/skeleton";
 
 export default function Home() {
   const { data: kpis, isLoading: isLoadingKpis } = useKpis();
-  const { data: proposals, isLoading: isLoadingProposals } = useProposals();
+  const { proposals } = useProposalStore();
   const { data: contracts, isLoading: isLoadingContracts } = useContracts();
 
   // Compute counts
-  const ongoingCount = proposals?.filter(p => p.status === 'on_going').length || 0;
-  const evaluationCount = proposals?.filter(p => p.status === 'under_evaluation').length || 0;
-  const completedCount = proposals?.filter(p => p.status === 'completed').length || 0;
+  const ongoingCount = proposals.filter(p => p.status === 'on_going').length;
+  const evaluationCount = proposals.filter(p => p.status === 'under_evaluation').length;
+  const completedCount = proposals.filter(p => p.status === 'completed').length;
   const renewalCount = contracts?.filter(c => c.status === 'renewal_due').length || 0;
   const collectionCount = contracts?.filter(c => c.status === 'delinquent').length || 0;
 

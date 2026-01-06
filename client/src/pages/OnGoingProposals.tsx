@@ -1,17 +1,17 @@
-import { useProposals } from "@/hooks/use-proposals";
+import { useProposalStore } from "@/lib/proposalStore";
 import { PageHeader } from "@/components/PageHeader";
 import { StatusBadge } from "@/components/StatusBadge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { ArrowLeft, ExternalLink, Calendar } from "lucide-react";
-import { Link } from "wouter";
+import { ArrowLeft, Play, Calendar } from "lucide-react";
+import { Link, useLocation } from "wouter";
 import { format } from "date-fns";
-import { Skeleton } from "@/components/ui/skeleton";
 
 export default function OnGoingProposals() {
-  const { data: proposals, isLoading } = useProposals();
-  const ongoing = proposals?.filter(p => p.status === 'on_going') || [];
+  const { proposals } = useProposalStore();
+  const [, setLocation] = useLocation();
+  const ongoing = proposals.filter(p => p.status === 'on_going');
 
   return (
     <div className="min-h-screen bg-slate-50 pb-20">
@@ -38,13 +38,7 @@ export default function OnGoingProposals() {
             </CardTitle>
           </CardHeader>
           <CardContent className="p-0">
-            {isLoading ? (
-              <div className="p-6 space-y-4">
-                <Skeleton className="h-12 w-full" />
-                <Skeleton className="h-12 w-full" />
-                <Skeleton className="h-12 w-full" />
-              </div>
-            ) : ongoing.length === 0 ? (
+            {ongoing.length === 0 ? (
               <div className="p-12 text-center text-muted-foreground">
                 No active proposals found.
               </div>
@@ -78,8 +72,13 @@ export default function OnGoingProposals() {
                         <StatusBadge status={proposal.status} />
                       </TableCell>
                       <TableCell className="text-right">
-                        <Button variant="ghost" size="sm" className="hover:bg-blue-100 hover:text-blue-700">
-                          Details <ExternalLink className="w-3 h-3 ml-2" />
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          className="hover:bg-blue-100 hover:text-blue-700"
+                          onClick={() => setLocation(`/product-config/${proposal.id}`)}
+                        >
+                          Resume <Play className="w-3 h-3 ml-2 fill-current" />
                         </Button>
                       </TableCell>
                     </TableRow>

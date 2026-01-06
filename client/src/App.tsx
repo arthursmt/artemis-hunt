@@ -16,6 +16,8 @@ import NewProposalScreen from "@/pages/NewProposalScreen";
 import CreditValidationScreen from "@/pages/CreditValidationScreen";
 import ProductConfigScreen from "@/pages/ProductConfigScreen";
 
+import { ProposalProvider } from "@/lib/proposalStore";
+
 function Router() {
   return (
     <Switch>
@@ -28,6 +30,7 @@ function Router() {
       <Route path="/new-proposal" component={NewProposalScreen} />
       <Route path="/credit-validation" component={CreditValidationScreen} />
       <Route path="/product-config" component={ProductConfigScreen} />
+      <Route path="/product-config/:id" component={ProductConfigScreen} />
       
       {/* Fallback to 404 */}
       <Route component={NotFound} />
@@ -39,8 +42,10 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
-        <Toaster />
-        <Router />
+        <ProposalProvider>
+          <Toaster />
+          <Router />
+        </ProposalProvider>
       </TooltipProvider>
     </QueryClientProvider>
   );

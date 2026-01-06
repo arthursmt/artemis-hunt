@@ -1,10 +1,12 @@
 import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Plus, X, Star, StarOff, User } from "lucide-react";
-import { Link, useLocation } from "wouter";
+import { ArrowLeft, Plus, X, Star, StarOff, User, Save } from "lucide-react";
+import { Link, useLocation, useParams } from "wouter";
 import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { useState, useEffect } from "react";
+import { useProposalStore } from "@/lib/proposalStore";
+import { useToast } from "@/hooks/use-toast";
 
 interface Member {
   id: number;
@@ -24,10 +26,29 @@ interface GroupState {
 
 export default function ProductConfigScreen() {
   const [, setLocation] = useLocation();
+  const params = useParams();
+  const { toast } = useToast();
+  const { saveProposal, getProposal } = useProposalStore();
   const [group, setGroup] = useState<GroupState | null>(null);
   const [activeMemberId, setActiveMemberId] = useState<number | null>(null);
 
   useEffect(() => {
+    // If we have an ID in params, it's a resume flow
+    if (params.id) {
+      const existing = getProposal(params.id);
+      if (existing) {
+        setGroup(existing.data.group);
+        setActiveMemberId(existing.data.group.leaderId);
+        // Sync back to session storage for consistency
+        sessionStorage.setItem("pending_proposal", JSON.stringify({
+          type: "group",
+          members: existing.data.group.members
+        }));
+        sessionStorage.setItem("active_group_config", JSON.stringify(existing.data.group));
+        return;
+      }
+    }
+
     const storedData = sessionStorage.getItem("pending_proposal");
     if (storedData) {
       const proposalData = JSON.parse(storedData);
@@ -61,11 +82,41 @@ export default function ProductConfigScreen() {
         sessionStorage.setItem("active_group_config", JSON.stringify(newGroup));
       }
     }
-  }, []);
+  }, [params.id]);
 
   const saveGroup = (newGroup: GroupState) => {
     setGroup(newGroup);
     sessionStorage.setItem("active_group_config", JSON.stringify(newGroup));
+  };
+
+  const handleSaveProposal = () => {
+    if (!group) return;
+
+    const leader = group.members.find(m => m.id === group.leaderId) || group.members[0];
+    const totalAmount = group.members.reduce((sum, m) => {
+      const digits = m.requestedAmount.replace(/\D/g, "");
+      return sum + (parseInt(digits) || 0) / 100;
+    }, 0);
+
+    saveProposal({
+      id: group.groupId,
+      groupId: group.groupId,
+      clientName: `${leader.firstName} ${leader.lastName}`,
+      leaderName: `${leader.firstName} ${leader.lastName}`,
+      amount: totalAmount.toString(),
+      totalAmount: totalAmount,
+      status: "on_going",
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      data: {
+        group: group
+      }
+    });
+
+    toast({
+      title: "Proposal Saved",
+      description: "You can resume this proposal later from the dashboard.",
+    });
   };
 
   const handleMakeLeader = (id: number) => {
@@ -161,6 +212,9 @@ export default function ProductConfigScreen() {
             <div className="h-6 w-px bg-slate-200 mx-2" />
             <h1 className="text-lg font-semibold text-slate-900">Product Configuration</h1>
           </div>
+          <Button onClick={handleSaveProposal} variant="outline" size="sm" className="gap-2">
+            <Save className="w-4 h-4" /> Save & Exit
+          </Button>
         </div>
       </header>
 
