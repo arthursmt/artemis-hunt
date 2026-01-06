@@ -122,7 +122,8 @@ export default function CreditValidationScreen() {
       }
 
       if (newMembers.length === 0) {
-        setLocation("/new-proposal");
+        sessionStorage.removeItem("pending_proposal");
+        setLocation("/");
       }
     }
   };
@@ -269,11 +270,11 @@ function CheckItem({ label, status }: { label: string; status: CheckStatus }) {
   let description = "";
 
   if (status === "approved") {
-    statusText = "Approved";
+    statusText = "approved";
     StatusIcon = CheckCircle2;
     iconColor = "text-green-500";
   } else if (status === "denied") {
-    statusText = "Denied";
+    statusText = "denied";
     StatusIcon = AlertCircle;
     iconColor = "text-red-500";
     description = label === "Internal risk criteria" 

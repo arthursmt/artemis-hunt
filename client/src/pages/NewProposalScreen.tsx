@@ -36,18 +36,33 @@ export default function NewProposalScreen() {
   const createProposal = useCreateProposal();
 
   const [proposalType, setProposalType] = useState<"group" | "individual">("group");
-  const [members, setMembers] = useState<Member[]>([
-    {
-      id: Date.now(),
-      firstName: "",
-      middleName: "",
-      lastName: "",
-      requestedAmount: "",
-      documentType: "",
-      documentNumber: "",
-    },
-  ]);
+  const [members, setMembers] = useState<Member[]>(() => {
+    const storedData = sessionStorage.getItem("pending_proposal");
+    if (storedData) {
+      const proposalData = JSON.parse(storedData);
+      return proposalData.members;
+    }
+    return [
+      {
+        id: Date.now(),
+        firstName: "",
+        middleName: "",
+        lastName: "",
+        requestedAmount: "",
+        documentType: "",
+        documentNumber: "",
+      },
+    ];
+  });
   const [activeMemberId, setActiveMemberId] = useState<number>(members[0].id);
+
+  useEffect(() => {
+    const storedData = sessionStorage.getItem("pending_proposal");
+    if (storedData) {
+      const proposalData = JSON.parse(storedData);
+      setProposalType(proposalData.type || "group");
+    }
+  }, []);
 
   const activeMember = members.find((m) => m.id === activeMemberId) || members[0];
 
