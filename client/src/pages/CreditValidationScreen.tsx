@@ -128,22 +128,16 @@ export default function CreditValidationScreen() {
     }
   };
 
-  if (members.length === 0) {
-    return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4 text-center">
-        <Card className="max-w-md w-full">
-          <CardContent className="p-8 space-y-4">
-            <AlertCircle className="w-12 h-12 text-yellow-500 mx-auto" />
-            <h2 className="text-xl font-bold">No Pending Proposal</h2>
-            <p className="text-slate-500">Please start a new proposal first.</p>
-            <Link href="/new-proposal">
-              <Button className="w-full">Go to New Proposal</Button>
-            </Link>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
+  const hasMembers = members.length > 0;
+  const hasDenied = members.some(m => {
+    const state = validationStates[m.id];
+    return state && Object.values(state.checks).some(s => s === "denied");
+  });
+  const hasPending = members.some(m => {
+    const state = validationStates[m.id];
+    return !state || Object.values(state.checks).some(s => s === "pending");
+  });
+  const canContinue = hasMembers && !hasDenied && !hasPending;
 
   return (
     <div className="min-h-screen bg-slate-50 pb-20">
@@ -250,10 +244,7 @@ export default function CreditValidationScreen() {
           </Link>
           <Button 
             className="flex-1 h-12 bg-primary hover:bg-primary/90 text-white font-semibold shadow-lg shadow-primary/20"
-            disabled={Object.values(validationStates).some(state => 
-              Object.values(state.checks).some(s => s === "pending") ||
-              Object.values(state.checks).some(s => s === "denied")
-            )}
+            disabled={!canContinue}
           >
             Continue to Product Config
           </Button>
