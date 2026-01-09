@@ -209,10 +209,11 @@ export default function ProductConfigScreen() {
         </div>
 
         <Card className="border-none shadow-xl bg-white min-h-[400px]">
-          <CardContent className="p-8 flex flex-col items-center justify-center text-slate-400">
-            <User className="w-12 h-12 mb-4 opacity-20" />
-            <p className="text-lg font-medium">Configuration forms for {group.members.find(m => m.id === activeMemberId)?.firstName}</p>
-            <p className="text-sm">Personal, Business, Financial, and Credit details will be configured here.</p>
+          <CardContent className="p-8 flex flex-col items-center justify-center py-24 text-center text-slate-600">
+            <h2 className="text-2xl font-semibold mb-2">Loan Details form placeholder</h2>
+            <p className="text-sm text-slate-500">
+              This is where the loan configuration form for the selected member will go.
+            </p>
           </CardContent>
         </Card>
 
