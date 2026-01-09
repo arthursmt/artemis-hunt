@@ -1,6 +1,6 @@
 import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Plus, X, Star, StarOff, User, Save } from "lucide-react";
+import { ArrowLeft, Plus, X, Star, StarOff, Save } from "lucide-react";
 import { Link, useLocation, useParams } from "wouter";
 import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
@@ -20,7 +20,6 @@ export default function ProductConfigScreen() {
 
   useEffect(() => {
     if (!proposalId) return;
-    
     const proposal = getProposalById(proposalId);
     if (proposal) {
       setGroup(proposal.data.group);
@@ -42,15 +41,9 @@ export default function ProductConfigScreen() {
     if (!group) return;
     const memberToLead = group.members.find(m => m.id === id);
     if (!memberToLead) return;
-
     const otherMembers = group.members.filter(m => m.id !== id);
     const reorderedMembers = [memberToLead, ...otherMembers];
-
-    saveGroupToStore({
-      ...group,
-      leaderId: id,
-      members: reorderedMembers
-    });
+    saveGroupToStore({ ...group, leaderId: id, members: reorderedMembers });
   };
 
   const handleAddMember = () => {
@@ -64,33 +57,19 @@ export default function ProductConfigScreen() {
       documentType: "ssn",
       documentNumber: "",
     };
-    saveGroupToStore({
-      ...group,
-      members: [...group.members, newMember]
-    });
+    saveGroupToStore({ ...group, members: [...group.members, newMember] });
     setActiveMemberId(newMember.id);
   };
 
   const handleRemoveMember = (id: number, e: React.MouseEvent) => {
     e.stopPropagation();
-    if (!group) return;
-    if (group.members.length === 1) return;
-
+    if (!group || group.members.length === 1) return;
     if (window.confirm("Are you sure you want to remove this member?")) {
       const newMembers = group.members.filter(m => m.id !== id);
       let newLeaderId = group.leaderId;
-      if (id === group.leaderId) {
-        newLeaderId = newMembers[0].id;
-      }
-
-      saveGroupToStore({
-        ...group,
-        leaderId: newLeaderId,
-        members: newMembers
-      });
-      if (activeMemberId === id) {
-        setActiveMemberId(newLeaderId);
-      }
+      if (id === group.leaderId) newLeaderId = newMembers[0].id;
+      saveGroupToStore({ ...group, leaderId: newLeaderId, members: newMembers });
+      if (activeMemberId === id) setActiveMemberId(newLeaderId);
     }
   };
 
@@ -107,13 +86,9 @@ export default function ProductConfigScreen() {
       <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4 text-center">
         <Card className="max-w-md w-full border-none shadow-xl">
           <CardContent className="p-8 space-y-4">
-            <div className="w-12 h-12 bg-yellow-100 text-yellow-600 rounded-full flex items-center justify-center mx-auto">
-              <StarOff className="w-6 h-6" />
-            </div>
             <h2 className="text-xl font-bold text-slate-900">No Active Proposal</h2>
-            <p className="text-slate-500 text-sm">Please validate a proposal first to start product configuration.</p>
             <Link href="/new-proposal">
-              <Button className="w-full bg-primary hover:bg-primary/90 text-white font-semibold">Start New Proposal</Button>
+              <Button className="w-full bg-primary text-white">Start New Proposal</Button>
             </Link>
           </CardContent>
         </Card>
@@ -124,14 +99,9 @@ export default function ProductConfigScreen() {
   return (
     <div className="min-h-screen bg-slate-50 pb-20">
       <header className="bg-white border-b sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+        <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
-                <div className="w-4 h-4 bg-secondary rounded-full" />
-              </div>
-              <span className="font-display font-bold text-slate-900 tracking-tight">ARTEMIS <span className="text-slate-400 font-medium">HUNTING MVP</span></span>
-            </div>
+            <span className="font-display font-bold text-slate-900 tracking-tight">ARTEMIS <span className="text-slate-400 font-medium">HUNTING MVP</span></span>
             <div className="h-6 w-px bg-slate-200 mx-2" />
             <h1 className="text-lg font-semibold text-slate-900">Product Configuration</h1>
           </div>
@@ -141,15 +111,15 @@ export default function ProductConfigScreen() {
         </div>
       </header>
 
-      <main className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        <div className="bg-slate-900 text-white rounded-xl p-4 mb-6 flex flex-wrap items-center justify-between gap-4 shadow-lg shadow-slate-200">
+      <main className="max-w-5xl mx-auto px-4 py-6">
+        <div className="bg-slate-900 text-white rounded-xl p-4 mb-6 flex items-center justify-between shadow-lg">
           <div className="flex items-center gap-8">
             <div>
-              <p className="text-[10px] uppercase tracking-widest text-slate-400 font-bold mb-1">Group ID</p>
+              <p className="text-[10px] uppercase text-slate-400 font-bold mb-1 tracking-widest">Group ID</p>
               <p className="font-mono font-medium">{group.groupId}</p>
             </div>
             <div>
-              <p className="text-[10px] uppercase tracking-widest text-slate-400 font-bold mb-1">Leader</p>
+              <p className="text-[10px] uppercase text-slate-400 font-bold mb-1 tracking-widest">Leader</p>
               <div className="flex items-center gap-2">
                 <Star className="w-3 h-3 text-secondary fill-secondary" />
                 <p className="font-semibold">
@@ -167,9 +137,7 @@ export default function ProductConfigScreen() {
               onClick={() => setActiveMemberId(member.id)}
               className={cn(
                 "flex items-center gap-3 px-6 py-3 rounded-t-xl cursor-pointer transition-all border-b-2 font-semibold text-sm relative group",
-                activeMemberId === member.id
-                  ? "bg-white text-primary border-primary shadow-[0_-4px_10px_-5px_rgba(0,0,0,0.05)]"
-                  : "text-slate-500 border-transparent hover:text-slate-700 hover:bg-slate-100/50"
+                activeMemberId === member.id ? "bg-white text-primary border-primary shadow-sm" : "text-slate-500 border-transparent hover:bg-slate-100/50"
               )}
             >
               <div className="flex items-center gap-2">
@@ -177,35 +145,10 @@ export default function ProductConfigScreen() {
                 <span>{member.firstName} {member.lastName}</span>
                 {member.id === group.leaderId && <Star className="w-3 h-3 text-secondary fill-secondary" />}
               </div>
-              
-              <div className="flex items-center gap-1">
-                {member.id !== group.leaderId && (
-                  <button 
-                    onClick={(e) => { e.stopPropagation(); handleMakeLeader(member.id); }}
-                    className="p-1 opacity-0 group-hover:opacity-100 hover:text-secondary transition-all"
-                    title="Make Leader"
-                  >
-                    <StarOff className="w-3 h-3" />
-                  </button>
-                )}
-                {group.members.length > 1 && (
-                  <button 
-                    onClick={(e) => handleRemoveMember(member.id, e)}
-                    className="p-1 opacity-0 group-hover:opacity-100 hover:text-red-500 transition-all"
-                  >
-                    <X className="w-3 h-3" />
-                  </button>
-                )}
-              </div>
+              <button onClick={(e) => handleRemoveMember(member.id, e)} className="p-1 opacity-0 group-hover:opacity-100 hover:text-red-500"><X className="w-3 h-3" /></button>
             </div>
           ))}
-          <button
-            onClick={handleAddMember}
-            className="p-3 text-primary hover:bg-white hover:shadow-sm rounded-t-xl transition-all mb-[2px]"
-            title="Add Member"
-          >
-            <Plus className="h-4 w-4" />
-          </button>
+          <button onClick={handleAddMember} className="p-3 text-primary hover:bg-white rounded-t-xl transition-all"><Plus className="h-4 w-4" /></button>
         </div>
 
         <Card className="border-none shadow-xl bg-white min-h-[400px]">

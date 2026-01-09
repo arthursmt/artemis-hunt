@@ -62,6 +62,7 @@ export const ProposalProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
     const newProposal: ProposalWithData = {
       id: id as any,
+      groupId: group.groupId,
       clientName: `${leader.firstName} ${leader.lastName}`,
       leaderName: `${leader.firstName} ${leader.lastName}`,
       amount: totalAmount.toString(),
