@@ -102,66 +102,6 @@ export default function ProductConfigScreen() {
     setLocation("/");
   };
 
-  const handleMakeLeader = (id: number) => {
-    if (!group) return;
-    const memberToLead = group.members.find(m => m.id === id);
-    if (!memberToLead) return;
-
-    const otherMembers = group.members.filter(m => m.id !== id);
-    const reorderedMembers = [memberToLead, ...otherMembers];
-
-    saveGroup({
-      ...group,
-      leaderId: id,
-      members: reorderedMembers
-    });
-  };
-
-  const handleAddMember = () => {
-    if (!group) return;
-    const newMember: Member = {
-      id: Date.now(),
-      firstName: "",
-      middleName: "",
-      lastName: "",
-      requestedAmount: "0",
-      documentType: "ssn",
-      documentNumber: "",
-    };
-    const newGroup = {
-      ...group,
-      members: [...group.members, newMember]
-    };
-    saveGroup(newGroup);
-    setActiveMemberId(newMember.id);
-  };
-
-  const handleRemoveMember = (id: number, e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (!group) return;
-    if (group.members.length === 1) return;
-
-    if (window.confirm("Are you sure you want to remove this member?")) {
-      const newMembers = group.members.filter(m => m.id !== id);
-      let newLeaderId = group.leaderId;
-      let finalMembers = newMembers;
-
-      if (id === group.leaderId) {
-        newLeaderId = newMembers[0].id;
-      }
-
-      const newGroup = {
-        ...group,
-        leaderId: newLeaderId,
-        members: finalMembers
-      };
-      saveGroup(newGroup);
-      if (activeMemberId === id) {
-        setActiveMemberId(newLeaderId);
-      }
-    }
-  };
-
   if (!group) {
     return (
       <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4 text-center">
