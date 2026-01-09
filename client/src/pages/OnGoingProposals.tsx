@@ -78,21 +78,21 @@ export default function OnGoingProposals() {
                         <StatusBadge status="on_going" />
                       </TableCell>
                       <TableCell className="text-right">
-                        <div className="flex flex-col items-end gap-1">
+                        <div className="flex flex-col gap-2 w-full max-w-[200px] ml-auto">
                           <Button 
                             variant="default" 
                             size="sm" 
-                            className="bg-primary hover:bg-primary/90 text-white font-semibold h-8"
+                            className="bg-primary hover:bg-primary/90 text-white font-semibold h-9 w-full rounded-lg shadow-sm"
                             onClick={() => setLocation(`/product-config/${proposal.id}`)}
                             data-testid={`button-keep-filling-${proposal.id}`}
                           >
                             Keep filling <Play className="w-3 h-3 ml-2 fill-current" />
                           </Button>
-                          <div className="flex items-center gap-2">
+                          <div className="flex items-center justify-between px-1">
                             <Button 
                               variant="ghost" 
                               size="sm" 
-                              className="text-slate-500 hover:text-primary h-auto p-0 text-xs underline"
+                              className="text-slate-500 hover:text-primary h-auto p-0 text-sm font-medium hover:bg-transparent"
                               onClick={() => setLocation(`/ongoing/${proposal.id}/details`)}
                               data-testid={`button-view-details-${proposal.id}`}
                             >
@@ -101,7 +101,7 @@ export default function OnGoingProposals() {
                             <Button 
                               variant="ghost" 
                               size="sm" 
-                              className="text-red-500 hover:text-red-700 h-auto p-0 text-xs underline"
+                              className="text-red-500 hover:text-red-700 h-auto p-0 text-sm font-medium hover:bg-transparent"
                               onClick={() => handleDelete(String(proposal.id))}
                               data-testid={`button-delete-${proposal.id}`}
                             >
