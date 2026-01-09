@@ -1,27 +1,40 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { Proposal, ProposalStatus } from "@shared/schema";
 
-interface Group {
-  groupId: string;
-  leaderId: number;
-  members: any[];
+export interface Member {
+  id: number;
+  firstName: string;
+  middleName: string;
+  lastName: string;
+  requestedAmount: string;
+  documentType: string;
+  documentNumber: string;
 }
 
-interface ProposalData {
+export interface Group {
+  groupId: string;
+  leaderId: number;
+  members: Member[];
+}
+
+export interface ProposalData {
   group: Group;
   [key: string]: any;
 }
 
-interface ProposalWithData extends Omit<Proposal, "amount"> {
+export interface ProposalWithData extends Omit<Proposal, "amount" | "status"> {
   amount: string;
+  status: string;
   data: ProposalData;
   totalAmount: number;
+  dateCreated: string;
 }
 
 interface ProposalContextType {
   proposals: ProposalWithData[];
-  saveProposal: (proposal: ProposalWithData) => void;
-  getProposal: (id: string) => ProposalWithData | undefined;
+  createProposalFromGroup: (group: Group) => ProposalWithData;
+  updateProposal: (proposalId: string, updater: (p: ProposalWithData) => ProposalWithData) => void;
+  getProposalById: (id: string) => ProposalWithData | undefined;
 }
 
 const ProposalContext = createContext<ProposalContextType | undefined>(undefined);
@@ -36,23 +49,44 @@ export const ProposalProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     localStorage.setItem("artemis_proposals", JSON.stringify(proposals));
   }, [proposals]);
 
-  const saveProposal = (proposal: ProposalWithData) => {
-    setProposals(prev => {
-      const proposalId = String(proposal.id);
-      const exists = prev.find(p => String(p.id) === proposalId);
-      if (exists) {
-        return prev.map(p => String(p.id) === proposalId ? proposal : p);
+  const createProposalFromGroup = (group: Group) => {
+    const id = Date.now().toString();
+    const leader = group.members.find(m => m.id === group.leaderId) || group.members[0];
+    const totalAmount = group.members.reduce((sum, m) => {
+      const digits = String(m.requestedAmount).replace(/\D/g, "");
+      return sum + (parseInt(digits) || 0) / 100;
+    }, 0);
+
+    const newProposal: ProposalWithData = {
+      id: id as any,
+      groupId: group.groupId,
+      clientName: `${leader.firstName} ${leader.lastName}`,
+      leaderName: `${leader.firstName} ${leader.lastName}`,
+      amount: totalAmount.toString(),
+      totalAmount: totalAmount,
+      status: "on_going",
+      dateCreated: new Date().toISOString(),
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      data: {
+        group: group
       }
-      return [...prev, proposal];
-    });
+    };
+
+    setProposals(prev => [...prev, newProposal]);
+    return newProposal;
   };
 
-  const getProposal = (id: string) => {
-    return proposals.find(p => p.id === id);
+  const updateProposal = (proposalId: string, updater: (p: ProposalWithData) => ProposalWithData) => {
+    setProposals(prev => prev.map(p => String(p.id) === String(proposalId) ? updater(p) : p));
+  };
+
+  const getProposalById = (id: string) => {
+    return proposals.find(p => String(p.id) === String(id));
   };
 
   return (
-    <ProposalContext.Provider value={{ proposals, saveProposal, getProposal }}>
+    <ProposalContext.Provider value={{ proposals, createProposalFromGroup, updateProposal, getProposalById }}>
       {children}
     </ProposalContext.Provider>
   );

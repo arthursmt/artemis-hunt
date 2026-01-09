@@ -5,6 +5,7 @@ import { Link, useLocation } from "wouter";
 import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { useState, useEffect } from "react";
+import { useProposalStore } from "@/lib/proposalStore";
 
 interface Member {
   id: number;
@@ -37,14 +38,19 @@ const DOCUMENT_TYPE_LABELS: Record<string, string> = {
 
 export default function CreditValidationScreen() {
   const [, setLocation] = useLocation();
+  const { createProposalFromGroup, updateProposal } = useProposalStore();
   const [members, setMembers] = useState<Member[]>([]);
   const [validationStates, setValidationStates] = useState<Record<number, MemberValidationState>>({});
+  const [proposalId, setProposalId] = useState<string | null>(null);
 
   useEffect(() => {
     const storedData = sessionStorage.getItem("pending_proposal");
     if (storedData) {
       const proposalData = JSON.parse(storedData);
       setMembers(proposalData.members);
+      if (proposalData.proposalId) {
+        setProposalId(proposalData.proposalId);
+      }
       
       // Initialize validation states
       const initialStates: Record<number, MemberValidationState> = {};
@@ -98,6 +104,39 @@ export default function CreditValidationScreen() {
       });
     }
   }, []);
+
+  const handleContinue = () => {
+    const storedData = sessionStorage.getItem("pending_proposal");
+    if (!storedData) return;
+    
+    const proposalData = JSON.parse(storedData);
+    const group = {
+      groupId: proposalData.groupId || `GRP-${Date.now()}`,
+      leaderId: members[0].id,
+      members: members
+    };
+
+    let currentProposalId = proposalId;
+
+    if (!currentProposalId) {
+      const newProposal = createProposalFromGroup(group);
+      currentProposalId = String(newProposal.id);
+      setProposalId(currentProposalId);
+      // Update session storage so we know this flow has a proposal
+      sessionStorage.setItem("pending_proposal", JSON.stringify({
+        ...proposalData,
+        proposalId: currentProposalId,
+        groupId: group.groupId
+      }));
+    } else {
+      updateProposal(currentProposalId, (prev) => ({
+        ...prev,
+        data: { ...prev.data, group: group }
+      }));
+    }
+
+    setLocation(`/product-config/${currentProposalId}`);
+  };
 
   const formatCurrency = (val: string) => {
     const digits = val.replace(/\D/g, "");
@@ -245,7 +284,7 @@ export default function CreditValidationScreen() {
           <Button 
             className="flex-1 h-12 bg-primary hover:bg-primary/90 text-white font-semibold shadow-lg shadow-primary/20"
             disabled={!canContinue}
-            onClick={() => setLocation("/product-config")}
+            onClick={handleContinue}
           >
             Continue to Product Config
           </Button>

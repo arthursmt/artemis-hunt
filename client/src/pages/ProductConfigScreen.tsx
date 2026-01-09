@@ -5,118 +5,101 @@ import { Link, useLocation, useParams } from "wouter";
 import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { useState, useEffect } from "react";
-import { useProposalStore } from "@/lib/proposalStore";
+import { useProposalStore, Group, Member } from "@/lib/proposalStore";
 import { useToast } from "@/hooks/use-toast";
-
-interface Member {
-  id: number;
-  firstName: string;
-  middleName: string;
-  lastName: string;
-  requestedAmount: string;
-  documentType: string;
-  documentNumber: string;
-}
-
-interface GroupState {
-  groupId: string;
-  leaderId: number;
-  members: Member[];
-}
 
 export default function ProductConfigScreen() {
   const [, setLocation] = useLocation();
   const params = useParams();
   const { toast } = useToast();
-  const { saveProposal, getProposal } = useProposalStore();
-  const [group, setGroup] = useState<GroupState | null>(null);
+  const { updateProposal, getProposalById } = useProposalStore();
+  const [group, setGroup] = useState<Group | null>(null);
   const [activeMemberId, setActiveMemberId] = useState<number | null>(null);
 
+  const proposalId = params.id;
+
   useEffect(() => {
-    // If we have an ID in params, it's a resume flow
-    if (params.id) {
-      const existing = getProposal(params.id);
-      if (existing) {
-        setGroup(existing.data.group);
-        setActiveMemberId(existing.data.group.leaderId);
-        // Sync back to session storage for consistency
-        sessionStorage.setItem("pending_proposal", JSON.stringify({
-          type: "group",
-          members: existing.data.group.members
-        }));
-        sessionStorage.setItem("active_group_config", JSON.stringify(existing.data.group));
-        return;
-      }
+    if (!proposalId) return;
+    
+    const proposal = getProposalById(proposalId);
+    if (proposal) {
+      setGroup(proposal.data.group);
+      setActiveMemberId(proposal.data.group.leaderId || proposal.data.group.members[0].id);
     }
+  }, [proposalId, getProposalById]);
 
-    const storedData = sessionStorage.getItem("pending_proposal");
-    if (storedData) {
-      const proposalData = JSON.parse(storedData);
-      
-      // Initialize or load group state
-      let existingGroup: GroupState | null = null;
-      try {
-        const storedGroup = sessionStorage.getItem("active_group_config");
-        if (storedGroup) {
-          existingGroup = JSON.parse(storedGroup);
-        }
-      } catch (e) {
-        console.error("Error parsing stored group config", e);
-      }
-
-      if (existingGroup && existingGroup.members && existingGroup.members.length > 0) {
-        setGroup(existingGroup);
-        setActiveMemberId(existingGroup.leaderId || existingGroup.members[0].id);
-      } else if (proposalData.members && proposalData.members.length > 0) {
-        const newGroupId = `GRP-${Date.now()}`;
-        const initialMembers = proposalData.members;
-        const initialLeaderId = initialMembers[0].id;
-        
-        const newGroup = {
-          groupId: newGroupId,
-          leaderId: initialLeaderId,
-          members: initialMembers
-        };
-        setGroup(newGroup);
-        setActiveMemberId(initialLeaderId);
-        sessionStorage.setItem("active_group_config", JSON.stringify(newGroup));
-      }
-    }
-  }, [params.id]);
-
-  const saveGroup = (newGroup: GroupState) => {
+  const saveGroupToStore = (newGroup: Group) => {
     setGroup(newGroup);
-    sessionStorage.setItem("active_group_config", JSON.stringify(newGroup));
+    if (proposalId) {
+      updateProposal(proposalId, (prev) => ({
+        ...prev,
+        data: { ...prev.data, group: newGroup }
+      }));
+    }
   };
 
-  const handleSaveProposal = () => {
+  const handleMakeLeader = (id: number) => {
     if (!group) return;
+    const memberToLead = group.members.find(m => m.id === id);
+    if (!memberToLead) return;
 
-    const leader = group.members.find(m => m.id === group.leaderId) || group.members[0];
-    const totalAmount = group.members.reduce((sum, m) => {
-      const digits = String(m.requestedAmount).replace(/\D/g, "");
-      return sum + (parseInt(digits) || 0) / 100;
-    }, 0);
+    const otherMembers = group.members.filter(m => m.id !== id);
+    const reorderedMembers = [memberToLead, ...otherMembers];
 
-    saveProposal({
-      id: group.groupId,
-      groupId: group.groupId,
-      clientName: `${leader.firstName} ${leader.lastName}`,
-      leaderName: `${leader.firstName} ${leader.lastName}`,
-      amount: totalAmount.toString(),
-      totalAmount: totalAmount,
-      status: "on_going",
-      createdAt: new Date(),
-      updatedAt: new Date(),
-      data: {
-        group: group
+    saveGroupToStore({
+      ...group,
+      leaderId: id,
+      members: reorderedMembers
+    });
+  };
+
+  const handleAddMember = () => {
+    if (!group) return;
+    const newMember: Member = {
+      id: Date.now(),
+      firstName: "",
+      middleName: "",
+      lastName: "",
+      requestedAmount: "0",
+      documentType: "ssn",
+      documentNumber: "",
+    };
+    saveGroupToStore({
+      ...group,
+      members: [...group.members, newMember]
+    });
+    setActiveMemberId(newMember.id);
+  };
+
+  const handleRemoveMember = (id: number, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!group) return;
+    if (group.members.length === 1) return;
+
+    if (window.confirm("Are you sure you want to remove this member?")) {
+      const newMembers = group.members.filter(m => m.id !== id);
+      let newLeaderId = group.leaderId;
+      if (id === group.leaderId) {
+        newLeaderId = newMembers[0].id;
       }
-    } as any);
 
+      saveGroupToStore({
+        ...group,
+        leaderId: newLeaderId,
+        members: newMembers
+      });
+      if (activeMemberId === id) {
+        setActiveMemberId(newLeaderId);
+      }
+    }
+  };
+
+  const handleSaveExit = () => {
     toast({
       title: "Proposal Saved",
       description: "You can resume this proposal later from the dashboard.",
     });
+    setLocation("/");
   };
 
   const handleMakeLeader = (id: number) => {
@@ -212,7 +195,7 @@ export default function ProductConfigScreen() {
             <div className="h-6 w-px bg-slate-200 mx-2" />
             <h1 className="text-lg font-semibold text-slate-900">Product Configuration</h1>
           </div>
-          <Button onClick={handleSaveProposal} variant="outline" size="sm" className="gap-2">
+          <Button onClick={handleSaveExit} variant="outline" size="sm" className="gap-2">
             <Save className="w-4 h-4" /> Save & Exit
           </Button>
         </div>
@@ -294,9 +277,9 @@ export default function ProductConfigScreen() {
         </Card>
 
         <div className="mt-8 flex justify-between items-center">
-          <Link href="/credit-validation">
+          <Link href="/">
             <Button variant="outline" className="h-12 px-8">
-              <ArrowLeft className="w-4 h-4 mr-2" /> Back to Validation
+              <ArrowLeft className="w-4 h-4 mr-2" /> Back to Home
             </Button>
           </Link>
           <Button className="h-12 px-12 bg-primary hover:bg-primary/90 text-white font-semibold shadow-lg shadow-primary/20">

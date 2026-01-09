@@ -57,19 +57,19 @@ export default function OnGoingProposals() {
                   {ongoing.map((proposal) => (
                     <TableRow key={proposal.id} className="hover:bg-blue-50/30 transition-colors">
                       <TableCell className="font-medium text-slate-900">
-                        {proposal.clientName}
+                        {proposal.leaderName}
                       </TableCell>
                       <TableCell className="font-mono text-slate-600">
-                        ${Number(proposal.amount).toLocaleString()}
+                        {new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(proposal.totalAmount)}
                       </TableCell>
                       <TableCell className="text-slate-500">
                         <div className="flex items-center gap-2">
                           <Calendar className="w-3 h-3" />
-                          {format(new Date(proposal.createdAt!), 'MMM dd, yyyy')}
+                          {format(new Date(proposal.dateCreated), 'MMM dd, yyyy')}
                         </div>
                       </TableCell>
                       <TableCell>
-                        <StatusBadge status={proposal.status} />
+                        <StatusBadge status="on_going" />
                       </TableCell>
                       <TableCell className="text-right">
                         <Button 
@@ -78,7 +78,7 @@ export default function OnGoingProposals() {
                           className="hover:bg-blue-100 hover:text-blue-700"
                           onClick={() => setLocation(`/product-config/${proposal.id}`)}
                         >
-                          Resume <Play className="w-3 h-3 ml-2 fill-current" />
+                          Keep filling <Play className="w-3 h-3 ml-2 fill-current" />
                         </Button>
                       </TableCell>
                     </TableRow>
