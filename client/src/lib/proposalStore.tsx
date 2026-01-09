@@ -29,6 +29,7 @@ export interface ProposalWithData extends Omit<Proposal, "amount" | "status"> {
   totalAmount: number;
   dateCreated: string;
   leaderName: string;
+  groupId: string;
 }
 
 interface ProposalContextType {
@@ -36,6 +37,7 @@ interface ProposalContextType {
   createProposalFromGroup: (group: Group) => ProposalWithData;
   updateProposal: (proposalId: string, updater: (p: ProposalWithData) => ProposalWithData) => void;
   getProposalById: (id: string) => ProposalWithData | undefined;
+  deleteProposal: (id: string) => void;
 }
 
 const ProposalContext = createContext<ProposalContextType | undefined>(undefined);
@@ -85,8 +87,12 @@ export const ProposalProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     return proposals.find(p => String(p.id) === String(id));
   };
 
+  const deleteProposal = (id: string) => {
+    setProposals(prev => prev.filter(p => String(p.id) !== String(id)));
+  };
+
   return (
-    <ProposalContext.Provider value={{ proposals, createProposalFromGroup, updateProposal, getProposalById }}>
+    <ProposalContext.Provider value={{ proposals, createProposalFromGroup, updateProposal, getProposalById, deleteProposal }}>
       {children}
     </ProposalContext.Provider>
   );

@@ -15,6 +15,7 @@ import CollectionsScreen from "@/pages/CollectionsScreen";
 import NewProposalScreen from "@/pages/NewProposalScreen";
 import CreditValidationScreen from "@/pages/CreditValidationScreen";
 import ProductConfigScreen from "@/pages/ProductConfigScreen";
+import ProposalDetailsPage from "@/pages/ProposalDetailsPage";
 
 import { ProposalProvider } from "@/lib/proposalStore";
 
@@ -31,6 +32,7 @@ function Router() {
       <Route path="/credit-validation" component={CreditValidationScreen} />
       <Route path="/product-config" component={ProductConfigScreen} />
       <Route path="/product-config/:id" component={ProductConfigScreen} />
+      <Route path="/ongoing/:id/details" component={ProposalDetailsPage} />
       
       {/* Fallback to 404 */}
       <Route component={NotFound} />

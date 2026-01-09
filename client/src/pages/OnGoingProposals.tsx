@@ -4,14 +4,20 @@ import { StatusBadge } from "@/components/StatusBadge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { ArrowLeft, Play, Calendar } from "lucide-react";
+import { ArrowLeft, Play, Calendar, Trash2, Eye } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { format } from "date-fns";
 
 export default function OnGoingProposals() {
-  const { proposals } = useProposalStore();
+  const { proposals, deleteProposal } = useProposalStore();
   const [, setLocation] = useLocation();
   const ongoing = proposals.filter(p => p.status === 'on_going');
+
+  const handleDelete = (id: string) => {
+    if (window.confirm("Delete proposal\n\nAre you sure you want to delete this proposal? This will remove all related data and cannot be undone.")) {
+      deleteProposal(id);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-slate-50 pb-20">
@@ -20,7 +26,7 @@ export default function OnGoingProposals() {
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="mb-8 flex items-center gap-4">
           <Link href="/">
-            <Button variant="outline" size="icon" className="rounded-full h-10 w-10 bg-white shadow-sm border-slate-200">
+            <Button variant="outline" size="icon" className="rounded-full h-10 w-10 bg-white shadow-sm border-slate-200" data-testid="button-back">
               <ArrowLeft className="h-5 w-5 text-slate-600" />
             </Button>
           </Link>
@@ -40,7 +46,7 @@ export default function OnGoingProposals() {
           <CardContent className="p-0">
             {ongoing.length === 0 ? (
               <div className="p-12 text-center text-muted-foreground">
-                No active proposals found.
+                No ongoing proposals at the moment.
               </div>
             ) : (
               <Table>
@@ -72,14 +78,37 @@ export default function OnGoingProposals() {
                         <StatusBadge status="on_going" />
                       </TableCell>
                       <TableCell className="text-right">
-                        <Button 
-                          variant="ghost" 
-                          size="sm" 
-                          className="hover:bg-blue-100 hover:text-blue-700"
-                          onClick={() => setLocation(`/product-config/${proposal.id}`)}
-                        >
-                          Keep filling <Play className="w-3 h-3 ml-2 fill-current" />
-                        </Button>
+                        <div className="flex flex-col items-end gap-1">
+                          <Button 
+                            variant="default" 
+                            size="sm" 
+                            className="bg-primary hover:bg-primary/90 text-white font-semibold h-8"
+                            onClick={() => setLocation(`/product-config/${proposal.id}`)}
+                            data-testid={`button-keep-filling-${proposal.id}`}
+                          >
+                            Keep filling <Play className="w-3 h-3 ml-2 fill-current" />
+                          </Button>
+                          <div className="flex items-center gap-2">
+                            <Button 
+                              variant="ghost" 
+                              size="sm" 
+                              className="text-slate-500 hover:text-primary h-auto p-0 text-xs underline"
+                              onClick={() => setLocation(`/ongoing/${proposal.id}/details`)}
+                              data-testid={`button-view-details-${proposal.id}`}
+                            >
+                              View details
+                            </Button>
+                            <Button 
+                              variant="ghost" 
+                              size="sm" 
+                              className="text-red-500 hover:text-red-700 h-auto p-0 text-xs underline"
+                              onClick={() => handleDelete(String(proposal.id))}
+                              data-testid={`button-delete-${proposal.id}`}
+                            >
+                              Delete
+                            </Button>
+                          </div>
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))}
