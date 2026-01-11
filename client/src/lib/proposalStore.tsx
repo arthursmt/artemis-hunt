@@ -17,8 +17,24 @@ export interface Group {
   members: Member[];
 }
 
+export interface LoanDetails {
+  loanValue: string;
+  loanType: string;
+  interestRateApr: number;
+  installments: number | null;
+  firstPaymentDate: string;
+  gracePeriodDays: number;
+  loanGoal: string;
+  otherGoal: string;
+  borrowersInsurance: boolean;
+  optionalInsurance1: string;
+  optionalInsurance2: string;
+  optionalInsurance3: string;
+}
+
 export interface ProposalData {
   group: Group;
+  loanDetailsByMember?: Record<number, LoanDetails>;
   [key: string]: any;
 }
 

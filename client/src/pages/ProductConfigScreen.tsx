@@ -6,7 +6,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import * as React from "react";
 import { useState, useEffect, useMemo } from "react";
-import { useProposalStore, Group, Member } from "@/lib/proposalStore";
+import { useProposalStore, Group, Member, LoanDetails } from "@/lib/proposalStore";
 import { useToast } from "@/hooks/use-toast";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -29,23 +29,6 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 
-type LoanDetails = {
-  loanValue: string;
-  loanType: string;
-  interestRate: string;
-  installments: string;
-  firstPaymentDate: string;
-  gracePeriod: string;
-  loanGoal: string;
-  otherGoal: string;
-  borrowerInsurance: string;
-  optionalInsurance1: string;
-  optionalInsurance2: string;
-  optionalInsurance3: string;
-};
-
-type LoanDetailsErrors = Partial<Record<keyof LoanDetails, string>>;
-
 const parseCurrency = (value: string): number => {
   const digits = value.replace(/[^\d.]/g, "");
   const amount = parseFloat(digits);
@@ -63,14 +46,14 @@ const formatDateInput = (d: Date) => d.toISOString().slice(0, 10);
 
 const createEmptyLoanDetails = (): LoanDetails => ({
   loanValue: "",
-  loanType: "working-capital",
-  interestRate: "14",
-  installments: "",
+  loanType: "Working capital",
+  interestRateApr: 14,
+  installments: null,
   firstPaymentDate: "",
-  gracePeriod: "0",
+  gracePeriodDays: 0,
   loanGoal: "",
   otherGoal: "",
-  borrowerInsurance: "yes",
+  borrowersInsurance: true,
   optionalInsurance1: "None",
   optionalInsurance2: "None",
   optionalInsurance3: "None",
@@ -80,18 +63,12 @@ const INSURANCE_PRICES: Record<string, number> = {
   "Work Loss Insurance": 20,
   "Health Premium": 40,
   "Income Insurance": 30,
-  "Personal Accident": 25,
-  "Inventory Protection": 35,
-  "Family Support": 15,
 };
 
 const INSURANCE_DESCRIPTIONS: Record<string, string> = {
   "Work Loss Insurance": "Helps cover your loan payments if you lose your job.",
   "Health Premium": "Provides extra protection in case of major medical events.",
   "Income Insurance": "Protects your monthly income against unexpected shocks.",
-  "Personal Accident": "Covers medical expenses and provides support in case of accidents.",
-  "Inventory Protection": "Protects your business inventory against theft or damage.",
-  "Family Support": "Provides financial assistance to your family during difficult times.",
 };
 
 export default function ProductConfigScreen() {
@@ -103,7 +80,7 @@ export default function ProductConfigScreen() {
   const [activeMemberId, setActiveMemberId] = useState<number | null>(null);
 
   const [loanDetailsByMember, setLoanDetailsByMember] = useState<Record<number, LoanDetails>>({});
-  const [loanErrorsByMember, setLoanErrorsByMember] = useState<Record<number, LoanDetailsErrors>>({});
+  const [loanErrorsByMember, setLoanErrorsByMember] = useState<Record<number, Partial<Record<keyof LoanDetails, string>>>>({});
 
   const proposalId = params.id;
   const today = new Date();
@@ -118,6 +95,12 @@ export default function ProductConfigScreen() {
       setGroup(loadedGroup);
       const initialActiveId = loadedGroup.leaderId || loadedGroup.members[0].id;
       setActiveMemberId(initialActiveId);
+      
+      if (proposal.data.loanDetailsByMember) {
+        setLoanDetailsByMember(proposal.data.loanDetailsByMember);
+      } else {
+        setLoanDetailsByMember({});
+      }
     }
   }, [proposalId, getProposalById]);
 
@@ -149,25 +132,27 @@ export default function ProductConfigScreen() {
     const diffDays = Math.max(0, Math.round(diffMs / (1000 * 60 * 60 * 24)));
     
     setLoanDetailsByMember(prev => {
-      if (prev[activeMemberId]?.gracePeriod === String(diffDays)) return prev;
+      if (prev[activeMemberId]?.gracePeriodDays === diffDays) return prev;
       return {
         ...prev,
         [activeMemberId]: {
           ...prev[activeMemberId],
-          gracePeriod: String(diffDays),
+          gracePeriodDays: diffDays,
         }
       };
     });
   }, [activeLoanDetails.firstPaymentDate, activeMemberId]);
 
-  const handleLoanFieldChange = (field: keyof LoanDetails, value: string) => {
-    if (activeMemberId === null) return;
+  const handleLoanFieldChange = (field: keyof LoanDetails, value: any) => {
+    if (!group) return;
+    const memberId = activeMemberId ?? group.members[0]?.id;
+    if (!memberId) return;
 
     setLoanDetailsByMember(prev => {
-      const current = prev[activeMemberId] || createEmptyLoanDetails();
-      let next = { ...current, [field]: value };
+      const base = prev[memberId] ?? createEmptyLoanDetails();
+      let next = { ...base, [field]: value };
 
-      if (field === "loanGoal" && value !== "other") {
+      if (field === "loanGoal" && value !== "Other") {
         next.otherGoal = "";
       }
 
@@ -179,17 +164,16 @@ export default function ProductConfigScreen() {
         next.optionalInsurance3 = "None";
       }
 
-      return { ...prev, [activeMemberId]: next };
+      return { ...prev, [memberId]: next };
     });
 
     setLoanErrorsByMember(prev => ({
       ...prev,
-      [activeMemberId]: { ...prev[activeMemberId], [field]: undefined }
+      [memberId]: { ...prev[memberId], [field]: undefined }
     }));
   };
 
   const adjustLoanValue = (delta: number) => {
-    if (activeMemberId === null) return;
     const current = parseCurrency(activeLoanDetails.loanValue || "0");
     let next = current + delta;
     if (next < 500) next = 500;
@@ -226,17 +210,23 @@ export default function ProductConfigScreen() {
     }));
   };
 
-  const calculateInstallment = useMemo(() => {
-    const P = parseCurrency(activeLoanDetails.loanValue);
-    const n = parseInt(activeLoanDetails.installments);
-    if (!P || !n || activeErrors.loanValue) return 0;
-    
-    const APR = 0.14;
-    const r = APR / 12;
-    return (P * r) / (1 - Math.pow(1 + r, -n));
-  }, [activeLoanDetails.loanValue, activeLoanDetails.installments, activeErrors.loanValue]);
+  const principalAmount = parseCurrency(activeLoanDetails.loanValue);
+  const annualRate = 0.14;
+  const monthlyRate = annualRate / 12;
+  const n = activeLoanDetails.installments ?? 0;
 
-  const insuranceTotal = useMemo(() => {
+  const monthlyLoanPayment = useMemo(() => {
+    if (principalAmount > 0 && n > 0 && !activeErrors.loanValue) {
+      return (principalAmount * monthlyRate * Math.pow(1 + monthlyRate, n)) /
+             (Math.pow(1 + monthlyRate, n) - 1);
+    }
+    return 0;
+  }, [principalAmount, n, monthlyRate, activeErrors.loanValue]);
+
+  const lifeInsuranceTotal = activeLoanDetails.borrowersInsurance ? principalAmount * 0.02 : 0;
+  const lifeInsuranceMonthly = (activeLoanDetails.borrowersInsurance && n > 0) ? (lifeInsuranceTotal / n) : 0;
+
+  const optionalInsuranceMonthly = useMemo(() => {
     let total = 0;
     [activeLoanDetails.optionalInsurance1, activeLoanDetails.optionalInsurance2, activeLoanDetails.optionalInsurance3].forEach(ins => {
       if (ins !== "None") {
@@ -247,16 +237,29 @@ export default function ProductConfigScreen() {
     return total;
   }, [activeLoanDetails.optionalInsurance1, activeLoanDetails.optionalInsurance2, activeLoanDetails.optionalInsurance3]);
 
+  const totalMonthlyInsurances = lifeInsuranceMonthly + optionalInsuranceMonthly;
+  const totalMonthlyPayment = monthlyLoanPayment + totalMonthlyInsurances;
+
+  const persistLoanDetails = () => {
+    if (!proposalId) return;
+    updateProposal(proposalId, prev => ({
+      ...prev,
+      data: {
+        ...prev.data,
+        loanDetailsByMember,
+      },
+    }));
+  };
+
   const validate = () => {
     if (!activeMemberId) return false;
-    const errors: LoanDetailsErrors = {};
+    const errors: any = {};
     const amount = parseCurrency(activeLoanDetails.loanValue);
 
     if (!activeLoanDetails.loanValue) errors.loanValue = "This field is required";
     else if (amount < 500 || amount > 50000) errors.loanValue = "Loan value must be between $500 and $50,000";
 
     if (!activeLoanDetails.loanType) errors.loanType = "This field is required";
-    if (!activeLoanDetails.interestRate) errors.interestRate = "This field is required";
     if (!activeLoanDetails.installments) errors.installments = "This field is required";
     
     if (!activeLoanDetails.firstPaymentDate) {
@@ -272,7 +275,6 @@ export default function ProductConfigScreen() {
     }
 
     if (!activeLoanDetails.loanGoal) errors.loanGoal = "This field is required";
-    if (!activeLoanDetails.borrowerInsurance) errors.borrowerInsurance = "This field is required";
 
     setLoanErrorsByMember(prev => ({ ...prev, [activeMemberId]: errors }));
     return Object.keys(errors).length === 0;
@@ -287,10 +289,18 @@ export default function ProductConfigScreen() {
       });
       return;
     }
+    persistLoanDetails();
     toast({
       title: "Proposal Saved",
       description: "You can resume this proposal later from the dashboard.",
     });
+    setLocation("/");
+  };
+
+  const handleBackToHome = () => {
+    const confirmed = window.confirm("Do you want to go back to the dashboard? Your latest changes will be saved.");
+    if (!confirmed) return;
+    persistLoanDetails();
     setLocation("/");
   };
 
@@ -340,10 +350,10 @@ export default function ProductConfigScreen() {
                 </p>
               </div>
             </div>
-          </div>
-          <div className="text-right">
-            <p className="text-[10px] uppercase text-slate-400 font-bold mb-1 tracking-widest">Base credit rate</p>
-            <p className="text-sm font-semibold">14% APR (fixed)</p>
+            <div>
+              <p className="text-[10px] uppercase text-slate-400 font-bold mb-1 tracking-widest">Base Rate</p>
+              <p className="font-semibold text-sm">14% APR (fixed)</p>
+            </div>
           </div>
         </div>
 
@@ -435,22 +445,22 @@ export default function ProductConfigScreen() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent className="bg-white">
-                    <SelectItem value="working-capital">Working capital</SelectItem>
-                    <SelectItem value="investment">Investment</SelectItem>
-                    <SelectItem value="other">Other</SelectItem>
+                    <SelectItem value="Working capital">Working capital</SelectItem>
+                    <SelectItem value="Investment">Investment</SelectItem>
+                    <SelectItem value="Other">Other</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
 
               <div className="space-y-2">
                 <Label>Grace period (days)</Label>
-                <Input value={activeLoanDetails.gracePeriod} readOnly className="h-10 bg-slate-50 cursor-not-allowed" />
+                <Input value={String(activeLoanDetails.gracePeriodDays)} readOnly className="h-10 bg-slate-50 cursor-not-allowed" />
               </div>
 
               {/* Row 3 */}
               <div className="space-y-2">
                 <Label>Interest rate (APR, % per year)</Label>
-                <Input value={`${activeLoanDetails.interestRate}%`} readOnly className="h-10 bg-slate-50 cursor-not-allowed text-slate-500" />
+                <Input value={`${activeLoanDetails.interestRateApr}%`} readOnly className="h-10 bg-slate-50 cursor-not-allowed text-slate-500" />
               </div>
 
               <div className="space-y-2">
@@ -460,11 +470,11 @@ export default function ProductConfigScreen() {
                     <SelectValue placeholder="Select goal" />
                   </SelectTrigger>
                   <SelectContent className="bg-white">
-                    <SelectItem value="inventory">Inventory purchase</SelectItem>
-                    <SelectItem value="equipment">Equipment purchase</SelectItem>
-                    <SelectItem value="working-capital">Working capital</SelectItem>
-                    <SelectItem value="debt">Debt consolidation</SelectItem>
-                    <SelectItem value="other">Other</SelectItem>
+                    <SelectItem value="Inventory">Inventory purchase</SelectItem>
+                    <SelectItem value="Equipment purchase">Equipment purchase</SelectItem>
+                    <SelectItem value="Working capital">Working capital</SelectItem>
+                    <SelectItem value="Debt consolidation">Debt consolidation</SelectItem>
+                    <SelectItem value="Other">Other</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -472,7 +482,7 @@ export default function ProductConfigScreen() {
               {/* Row 4 */}
               <div className="space-y-2">
                 <Label>Number of installments</Label>
-                <Select value={activeLoanDetails.installments} onValueChange={(v) => handleLoanFieldChange("installments", v)}>
+                <Select value={activeLoanDetails.installments ? String(activeLoanDetails.installments) : ""} onValueChange={(v) => handleLoanFieldChange("installments", parseInt(v))}>
                   <SelectTrigger className={cn("h-10 bg-white text-slate-900", activeErrors.installments && "border-red-500")}>
                     <SelectValue placeholder="Select installments" />
                   </SelectTrigger>
@@ -487,14 +497,14 @@ export default function ProductConfigScreen() {
               <div className="space-y-2">
                 <Label>Installment amount (per month)</Label>
                 <Input 
-                  value={calculateInstallment ? formatCurrency(calculateInstallment) : "--"} 
+                  value={monthlyLoanPayment ? formatCurrency(monthlyLoanPayment) : "--"} 
                   readOnly 
                   className="h-10 bg-slate-50 cursor-not-allowed text-slate-900 font-semibold" 
                 />
               </div>
 
               {/* Full Width Row for Other Goal */}
-              {activeLoanDetails.loanGoal === "other" && (
+              {activeLoanDetails.loanGoal === "Other" && (
                 <div className="col-span-1 md:col-span-2 space-y-2 animate-in fade-in slide-in-from-top-2">
                   <Label>Other goal (optional)</Label>
                   <Input
@@ -510,25 +520,30 @@ export default function ProductConfigScreen() {
             <div className="mt-12 pt-8 border-t space-y-8">
               <div className="space-y-4">
                 <h3 className="text-lg font-bold text-slate-900">Insurances</h3>
-                <div className="bg-slate-50 p-6 rounded-xl flex items-center justify-between">
-                  <Label className="font-semibold text-slate-700">Borrower's Insurance (Credit Life)</Label>
-                  <RadioGroup value={activeLoanDetails.borrowerInsurance} onValueChange={(v) => handleLoanFieldChange("borrowerInsurance", v)} className="flex gap-6">
-                    <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="yes" id="ins-yes" />
-                      <Label htmlFor="ins-yes" className="font-medium cursor-pointer">Yes</Label>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="no" id="ins-no" />
-                      <Label htmlFor="ins-no" className="font-medium cursor-pointer">No</Label>
-                    </div>
-                  </RadioGroup>
+                <div className="bg-slate-50 p-6 rounded-xl space-y-4">
+                  <div className="flex items-center justify-between">
+                    <Label className="font-semibold text-slate-700">Borrower's Insurance (Credit Life)</Label>
+                    <RadioGroup value={activeLoanDetails.borrowersInsurance ? "yes" : "no"} onValueChange={(v) => handleLoanFieldChange("borrowersInsurance", v === "yes")} className="flex gap-6">
+                      <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="yes" id="ins-yes" />
+                        <Label htmlFor="ins-yes" className="font-medium cursor-pointer">Yes</Label>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="no" id="ins-no" />
+                        <Label htmlFor="ins-no" className="font-medium cursor-pointer">No</Label>
+                      </div>
+                    </RadioGroup>
+                  </div>
+                  <p className="text-xs text-slate-500 font-medium italic">
+                    Credit life insurance costs 2% of the loan amount (one-time premium, no interest). Total premium: <span className="text-slate-900 font-bold">{formatCurrency(lifeInsuranceTotal)}</span>
+                  </p>
                 </div>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 {[1, 2, 3].map(num => {
                   const field = `optionalInsurance${num}` as keyof LoanDetails;
-                  const value = activeLoanDetails[field];
+                  const value = activeLoanDetails[field] as string;
                   const isVisible = num === 1 || activeLoanDetails[`optionalInsurance${num-1}` as keyof LoanDetails] !== "None";
                   
                   if (!isVisible) return null;
@@ -586,15 +601,19 @@ export default function ProductConfigScreen() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-4">
                 <div className="flex justify-between items-center py-1">
                   <span className="text-slate-500 font-medium">Base monthly installment:</span>
-                  <span className="text-lg font-bold text-slate-900">{calculateInstallment ? formatCurrency(calculateInstallment) : "--"}</span>
+                  <span className="text-lg font-bold text-slate-900">{monthlyLoanPayment ? formatCurrency(monthlyLoanPayment) : "--"}</span>
                 </div>
                 <div className="flex justify-between items-center py-1">
                   <span className="text-slate-500 font-medium">Interest rate:</span>
                   <span className="font-bold text-slate-900">14% APR</span>
                 </div>
-                <div className="flex justify-between items-center py-1 border-t border-slate-200 md:border-none pt-4 md:pt-1">
+                <div className="flex justify-between items-center py-1">
+                  <span className="text-slate-500 font-medium">Credit life insurance (monthly share):</span>
+                  <span className="text-slate-900 font-bold">{formatCurrency(lifeInsuranceMonthly)}</span>
+                </div>
+                <div className="flex justify-between items-center py-1">
                   <span className="text-slate-500 font-medium">Optional insurances:</span>
-                  <span className="text-slate-900 font-bold">{formatCurrency(insuranceTotal)}</span>
+                  <span className="text-slate-900 font-bold">{formatCurrency(optionalInsuranceMonthly)}</span>
                 </div>
                 <div className="flex justify-between items-center py-1">
                   <span className="text-slate-500 font-medium">First payment date:</span>
@@ -603,7 +622,7 @@ export default function ProductConfigScreen() {
                 <div className="flex justify-between items-center py-1 col-span-1 md:col-span-2 mt-4 pt-6 border-t-2 border-primary/20">
                   <span className="text-xl font-bold text-primary">Total monthly payment:</span>
                   <span className="text-2xl font-black text-primary">
-                    {calculateInstallment ? formatCurrency(calculateInstallment + insuranceTotal) : "--"}
+                    {monthlyLoanPayment ? formatCurrency(totalMonthlyPayment) : "--"}
                   </span>
                 </div>
                 {activeLoanDetails.firstPaymentDate && (
@@ -618,11 +637,9 @@ export default function ProductConfigScreen() {
         </Card>
 
         <div className="mt-8 flex justify-between items-center">
-          <Link href="/">
-            <Button variant="outline" className="h-12 px-8 font-semibold">
-              <ArrowLeft className="w-4 h-4 mr-2" /> Back to Home
-            </Button>
-          </Link>
+          <Button variant="outline" className="h-12 px-8 font-semibold" onClick={handleBackToHome}>
+            <ArrowLeft className="w-4 h-4 mr-2" /> Back to Home
+          </Button>
           <Button 
             onClick={handleSaveExit}
             className="h-12 px-12 bg-primary hover:bg-primary/90 text-white font-bold shadow-xl shadow-primary/20"
