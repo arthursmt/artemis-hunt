@@ -484,7 +484,14 @@ export default function ProductConfigScreen() {
                 </Select>
               </div>
 
-              <div />
+              <div className="space-y-2">
+                <Label>Installment amount (per month)</Label>
+                <Input 
+                  value={calculateInstallment ? formatCurrency(calculateInstallment) : "--"} 
+                  readOnly 
+                  className="h-10 bg-slate-50 cursor-not-allowed text-slate-900 font-semibold" 
+                />
+              </div>
 
               {/* Full Width Row for Other Goal */}
               {activeLoanDetails.loanGoal === "other" && (
