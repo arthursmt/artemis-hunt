@@ -4,11 +4,28 @@ import { Proposal, ProposalStatus } from "@shared/schema";
 export interface Member {
   id: number;
   firstName: string;
-  middleName: string;
+  middleName?: string;
   lastName: string;
   requestedAmount: string;
   documentType: string;
   documentNumber: string;
+  countryOfOrigin?: string;
+  birthDate?: string;
+  homeAddress1?: string;
+  homeAddress2?: string;
+  state?: string;
+  city?: string;
+  zipCode?: string;
+  contact1Type?: string;
+  contact1Number?: string;
+  contact2Type?: string;
+  contact2Number?: string;
+  contact3Type?: string;
+  contact3Number?: string;
+  referenceName1?: string;
+  referenceNumber1?: string;
+  referenceName2?: string;
+  referenceNumber2?: string;
 }
 
 export interface Group {
