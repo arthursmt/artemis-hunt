@@ -4,6 +4,7 @@ import { ArrowLeft, Plus, X, Star, Save } from "lucide-react";
 import { Link, useLocation, useParams } from "wouter";
 import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
+import * as React from "react";
 import { useState, useEffect } from "react";
 import { useProposalStore, Group, Member } from "@/lib/proposalStore";
 import { useToast } from "@/hooks/use-toast";
@@ -95,7 +96,6 @@ export default function ProductConfigScreen() {
     }
   }, [proposalId, getProposalById]);
 
-  // Sync loanValue when activeMemberId changes or group is loaded
   useEffect(() => {
     if (!group || activeMemberId === null) return;
     const member = group.members.find(m => m.id === activeMemberId);
@@ -117,20 +117,22 @@ export default function ProductConfigScreen() {
   const activeLoanDetails = activeMemberId !== null ? (loanDetailsByMember[activeMemberId] || createEmptyLoanDetails()) : createEmptyLoanDetails();
   const activeErrors = activeMemberId !== null ? (loanErrorsByMember[activeMemberId] || {}) : {};
 
-  // Auto-calculate Grace Period
   useEffect(() => {
     if (!activeMemberId || !activeLoanDetails.firstPaymentDate) return;
     const selected = new Date(activeLoanDetails.firstPaymentDate + "T00:00:00");
     const diffMs = selected.getTime() - today.getTime();
     const diffDays = Math.max(0, Math.round(diffMs / (1000 * 60 * 60 * 24)));
     
-    setLoanDetailsByMember(prev => ({
-      ...prev,
-      [activeMemberId]: {
-        ...prev[activeMemberId],
-        gracePeriod: String(diffDays),
-      }
-    }));
+    setLoanDetailsByMember(prev => {
+      if (prev[activeMemberId]?.gracePeriod === String(diffDays)) return prev;
+      return {
+        ...prev,
+        [activeMemberId]: {
+          ...prev[activeMemberId],
+          gracePeriod: String(diffDays),
+        }
+      };
+    });
   }, [activeLoanDetails.firstPaymentDate, activeMemberId]);
 
   const handleLoanFieldChange = (field: keyof LoanDetails, value: string) => {
@@ -140,12 +142,10 @@ export default function ProductConfigScreen() {
       const current = prev[activeMemberId] || createEmptyLoanDetails();
       let next = { ...current, [field]: value };
 
-      // Conditional logic for otherGoal
       if (field === "loanGoal" && value !== "other") {
         next.otherGoal = "";
       }
 
-      // Conditional logic for optional insurances
       if (field === "optionalInsurance1" && value === "None") {
         next.optionalInsurance2 = "None";
         next.optionalInsurance3 = "None";
@@ -221,10 +221,23 @@ export default function ProductConfigScreen() {
     setLocation("/");
   };
 
-  if (!group) return null;
+  if (!group) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4 text-center font-display">
+        <Card className="max-w-md w-full border-none shadow-xl">
+          <CardContent className="p-8 space-y-4">
+            <h2 className="text-xl font-bold text-slate-900">No Active Proposal</h2>
+            <Link href="/new-proposal">
+              <Button className="w-full bg-primary text-white">Start New Proposal</Button>
+            </Link>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-slate-50 pb-20">
+    <div className="min-h-screen bg-slate-50 pb-20 font-display">
       <header className="bg-white border-b sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
           <div className="flex items-center gap-4">
@@ -294,7 +307,6 @@ export default function ProductConfigScreen() {
         <Card className="border-none shadow-xl bg-white">
           <CardContent className="p-8">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-              {/* Left Column */}
               <div className="space-y-6">
                 <div className="space-y-2">
                   <Label>Loan value</Label>
@@ -363,7 +375,6 @@ export default function ProductConfigScreen() {
                 </div>
               </div>
 
-              {/* Right Column */}
               <div className="space-y-6">
                 <div className="space-y-2">
                   <Label>First payment date</Label>
