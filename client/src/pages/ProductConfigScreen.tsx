@@ -75,6 +75,9 @@ const INSURANCE_DESCRIPTIONS: Record<string, string> = {
   "Income Insurance": "Protects your monthly income against unexpected shocks.",
 };
 
+import { BusinessDataTab } from "@/components/productConfig/BusinessDataTab";
+import { PnLTab } from "@/components/productConfig/PnLTab";
+
 export default function ProductConfigScreen() {
   const [, setLocation] = useLocation();
   const params = useParams();
@@ -86,6 +89,15 @@ export default function ProductConfigScreen() {
 
   const [loanDetailsByMember, setLoanDetailsByMember] = useState<Record<number, LoanDetails>>({});
   const [loanErrorsByMember, setLoanErrorsByMember] = useState<Record<number, Partial<Record<keyof LoanDetails, string>>>>({});
+  const [memberErrors, setMemberErrors] = useState<Record<number, Record<string, string>>>({});
+
+  const handleFieldChange = (section: string, value: any) => {
+    if (!group || !activeMember) return;
+    const updatedMembers = group.members.map(m => m.id === activeMember.id ? { ...m, [section]: value } : m);
+    const newGroup = { ...group, members: updatedMembers };
+    setGroup(newGroup);
+    if (proposalId) updateProposal(proposalId, prev => ({ ...prev, data: { ...prev.data, group: newGroup } }));
+  };
 
   const proposalId = params.id;
   const today = new Date();
@@ -909,14 +921,28 @@ export default function ProductConfigScreen() {
           </Card>
         )}
 
-        {(activeSection === "business" || activeSection === "financials") && (
+        {activeSection === "business" && activeMember && (
           <Card className="border-none shadow-xl bg-white">
-            <CardContent className="p-12 text-center space-y-4">
-              <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto">
-                <Info className="w-8 h-8 text-slate-400" />
-              </div>
-              <h2 className="text-xl font-bold text-slate-900">Feature Coming Soon</h2>
-              <p className="text-slate-500 max-w-sm mx-auto">The {activeSection === "business" ? "Business Data" : "Financials (P&L)"} section is currently under development.</p>
+            <CardContent className="p-8">
+              <h2 className="text-xl font-bold text-slate-900 mb-6">Business Data</h2>
+              <BusinessDataTab 
+                member={activeMember} 
+                onChange={handleFieldChange} 
+                errors={memberErrors[activeMemberId!] || {}} 
+              />
+            </CardContent>
+          </Card>
+        )}
+
+        {activeSection === "financials" && activeMember && (
+          <Card className="border-none shadow-xl bg-white">
+            <CardContent className="p-8">
+              <h2 className="text-xl font-bold text-slate-900 mb-6">Financials (P&L)</h2>
+              <PnLTab 
+                member={activeMember} 
+                onChange={handleFieldChange} 
+                errors={memberErrors[activeMemberId!] || {}} 
+              />
             </CardContent>
           </Card>
         )}

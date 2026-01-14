@@ -1,0 +1,145 @@
+Create two new member sub-tabs in Product Configuration: “Business Data” and “Financials (P&L)”, based on the fields in Artemis Loan Form.xlsx.
+
+UI placement
+
+In the member sub-tabs (currently Loan Details and Personal Data), add two new tabs:
+
+Business Data
+
+Financials (P&L)
+
+Keep tablet-first spacing consistent with existing tabs.
+
+Tabs must not reorder when data changes.
+
+Data model + persistence
+
+Extend the proposal store Member model to include:
+
+member.businessData: object with all Business Data fields
+
+member.pnl: object with all Business P&L fields
+
+Ensure Save & Exit persists these objects and reopening from “On Going” restores values.
+
+Use stable keys (camelCase) and do not break existing stored proposals (provide defaults when missing).
+
+Business Data tab fields + rules (per member)
+
+Required fields:
+
+businessName (text)
+
+businessType (select list) and if businessType == “Other” show otherBusinessType (text, optional)
+
+businessSector (select list)
+
+multipleBusiness (boolean toggle)
+
+openingMonth (select list of 12 months)
+
+openingYear (number, 4 digits)
+
+businessAddress1 (text)
+
+businessAddress2 (text) IMPORTANT: make optional even if spreadsheet shows mandatory
+
+state (US states select list, reuse existing state list from Personal Data)
+
+city (text)
+
+zipCode (numeric)
+
+contact1Type (select list, reuse contact types from Personal Data)
+
+businessContact1 (numeric)
+
+Conditional fields:
+
+If multipleBusiness is true, show Business 2 and Business 3 blocks:
+
+businessName2, businessType2, businessSector2 (all optional)
+
+businessName3, businessType3, businessSector3 (all optional)
+
+Contact 2 fields optional: contact2Type, businessContact2
+
+Validation:
+
+On Save & Exit, validate required fields; show inline errors; block save until fixed.
+
+Text rules consistent with Personal Data name rules where applicable (no leading spaces; allow accents; no numbers only for name-like fields).
+
+Financials (P&L) tab fields + rules (per member)
+
+Editable numeric inputs (required):
+
+earningsMonthly
+
+monthlySales1
+
+operationalCostsMonthlyTotal
+
+personalExpensesMonthlyTotal
+
+Editable numeric inputs (optional):
+
+monthlySales2, monthlySales3, receivablesFactoring, extraIncome, deductions
+
+payroll, sga, facilitiesRent, cogs, investmentsCapex, operationalOther
+
+financialCostsMonthly, shortTermLoans, longTermLoans, accountsPayable
+
+homeRent, clothing, nutrition, water, power, education, subscriptions, transportation, personalOther
+
+savings, monthlySavings, totalSavings
+
+financialDebts
+
+institution1Name + institution1Amount, institution2Name + institution2Amount, institution3Name + institution3Amount
+
+Calculated read-only fields (still displayed because spreadsheet lists them as required):
+
+netRevenueMonthly = (earningsMonthly + monthlySales1 + monthlySales2 + monthlySales3 + receivablesFactoring + extraIncome) - deductions
+
+grossProfitMonthly = netRevenueMonthly - operationalCostsMonthlyTotal
+
+businessNetProfitMonthly = grossProfitMonthly - financialCostsMonthly
+
+annualRevenue = netRevenueMonthly * 12
+
+annualExpenses = (operationalCostsMonthlyTotal + personalExpensesMonthlyTotal) * 12
+
+operationalMargin = if netRevenueMonthly > 0 then businessNetProfitMonthly / netRevenueMonthly else 0 (display as %)
+
+familyExpenses = personalExpensesMonthlyTotal (until a different definition exists)
+
+paymentCapacity = businessNetProfitMonthly - personalExpensesMonthlyTotal
+
+Validation:
+
+Required numeric fields must be present and >= 0.
+
+Optional numeric fields default to 0 when empty for calculations.
+
+Inline errors; block Save & Exit if required inputs invalid.
+
+Reuse existing components
+
+Reuse the same numeric/currency input behavior used in Loan Details.
+
+Reuse existing Select components and styles.
+
+Files
+
+If the codebase already has per-tab components, create:
+
+client/src/components/productConfig/BusinessDataTab.tsx
+
+client/src/components/productConfig/PnLTab.tsx
+
+Otherwise implement inside the existing ProductConfigScreen member tab content in a clean way (no giant file growth).
+
+Update ProductConfigScreen to render the two new tabs and wire them to the proposal store.
+
+Deliver working UI + persistence, with validation consistent with Loan Details and Personal Data, and no regressions in existing flows.
