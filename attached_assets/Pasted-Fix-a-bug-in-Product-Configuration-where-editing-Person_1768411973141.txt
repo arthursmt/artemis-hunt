@@ -1,0 +1,83 @@
+Fix a bug in Product Configuration where editing Personal Data (First/Middle/Last name) on Member 2+ updates the leader name. Each member must have fully independent name fields. Also add a “Change leader” action in the dark header that lets the user select a member as leader; leader must always be position 1 in the members list.
+
+Root cause to fix (do not hack around it)
+
+Ensure all member form inputs read/write by stable member identity, not by array index.
+
+Never write to members[0] unless the active member actually is members[0].
+
+Ensure member tabs use stable keys (member.id) and the active tab points to a memberId, not “index”.
+
+Implementation requirements for member editing
+
+In ProductConfigScreen (or its tab components), store activeMemberId (string) for which member is being edited.
+
+Derive activeMember by finding members.find(m => m.id === activeMemberId).
+
+All input handlers must call updateMember(proposalId, memberId, patch) using memberId, not index.
+
+Example behavior:
+
+When user types in First Name for Member 2, only member2.firstName changes.
+
+Leader name shown in header and tab label for leader must only change when the leader’s own name fields are edited OR when leader is changed via the leader change flow.
+
+Add “Change leader” action in the black header
+
+In the dark group header section (where Group ID / Leader / Base Rate are shown), add a button: “Change leader”.
+
+Clicking opens a modal/dialog with a list of current members (up to 5).
+
+Each row shows:
+
+Member display name: “First Last” if available, otherwise “Member X”
+
+A radio selection
+
+Current leader should be pre-selected and indicated (e.g., star icon)
+
+Confirm button: “Set as leader”
+
+Cancel closes without changes
+
+Leader change business rule
+
+After confirming, reorder members array so the chosen leader becomes members[0].
+
+All other members keep their relative order from before (stable order).
+
+The chosen leader’s own data must remain intact (no data reset).
+
+Active tab should switch to the new leader after change (activeMemberId becomes newLeaderId).
+
+The leader star badge should move accordingly.
+
+Ensure no accidental reordering
+
+Member tabs must not reorder when editing names or other fields.
+
+Do not sort members by name or by any derived property.
+
+Only reorder when “Change leader” is confirmed.
+
+Files / likely locations
+
+Update: client/src/pages/ProductConfigScreen.tsx
+
+Update proposal store functions (where member update happens) so they update by memberId.
+
+If Personal Data form is in a component, ensure it receives memberId and uses it for updates.
+
+Acceptance tests to verify
+
+Create proposal with 2 members.
+
+Go to Member 2 -> Personal Data -> edit First Name. Member 1 (leader) name must not change.
+
+Switch back and forth between Member 1 and Member 2: each keeps its own values.
+
+Use Change leader to select Member 2: Member 2 becomes tab #1 and is marked leader. Member 1 becomes tab #2. Data remains intact.
+
+Edit Member 1 name after leader change: only Member 1 changes (even though it is now Member 2).
+
+Deliver the fix without breaking Save & Exit persistence and without resetting existing proposal data.

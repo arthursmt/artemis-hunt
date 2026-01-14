@@ -178,7 +178,18 @@ export const ProposalProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   };
 
   const updateProposal = (proposalId: string, updater: (p: ProposalWithData) => ProposalWithData) => {
-    setProposals(prev => prev.map(p => String(p.id) === String(proposalId) ? updater(p) : p));
+    setProposals(prev => prev.map(p => {
+      if (String(p.id) === String(proposalId)) {
+        const updated = updater(p);
+        const leader = updated.data.group.members.find(m => m.id === updated.data.group.leaderId) || updated.data.group.members[0];
+        return {
+          ...updated,
+          clientName: `${leader.firstName} ${leader.lastName}`,
+          leaderName: `${leader.firstName} ${leader.lastName}`,
+        };
+      }
+      return p;
+    }));
   };
 
   const getProposalById = (id: string) => {

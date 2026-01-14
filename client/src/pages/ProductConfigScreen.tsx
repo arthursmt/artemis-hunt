@@ -92,11 +92,37 @@ export default function ProductConfigScreen() {
   const [memberErrors, setMemberErrors] = useState<Record<number, Record<string, string>>>({});
 
   const handleFieldChange = (section: string, value: any) => {
-    if (!group || !activeMember) return;
-    const updatedMembers = group.members.map(m => m.id === activeMember.id ? { ...m, [section]: value } : m);
+    if (!group || activeMemberId === null) return;
+    const updatedMembers = group.members.map(m => m.id === activeMemberId ? { ...m, [section]: value } : m);
     const newGroup = { ...group, members: updatedMembers };
     setGroup(newGroup);
     if (proposalId) updateProposal(proposalId, prev => ({ ...prev, data: { ...prev.data, group: newGroup } }));
+  };
+
+  const handleChangeLeader = (newLeaderId: number) => {
+    if (!group || !proposalId) return;
+    
+    const newLeader = group.members.find(m => m.id === newLeaderId);
+    if (!newLeader) return;
+
+    const otherMembers = group.members.filter(m => m.id !== newLeaderId);
+    const reorderedMembers = [newLeader, ...otherMembers];
+    
+    const newGroup = {
+      ...group,
+      leaderId: newLeaderId,
+      members: reorderedMembers
+    };
+
+    setGroup(newGroup);
+    setActiveMemberId(newLeaderId);
+    updateProposal(proposalId, prev => ({
+      ...prev,
+      data: {
+        ...prev.data,
+        group: newGroup
+      }
+    }));
   };
 
   const proposalId = params.id;
@@ -190,10 +216,10 @@ export default function ProductConfigScreen() {
   };
 
   const handlePersonalFieldChange = (field: keyof Member, value: string) => {
-    if (!group || !activeMember) return;
+    if (!group || activeMemberId === null) return;
 
     const updatedMembers = group.members.map(member =>
-      member.id === activeMember.id
+      member.id === activeMemberId
         ? { ...member, [field]: value }
         : member
     );
@@ -485,6 +511,34 @@ export default function ProductConfigScreen() {
               <p className="text-[10px] uppercase text-slate-400 font-bold mb-1 tracking-widest">Base Rate</p>
               <p className="font-semibold text-sm">14% APR (fixed)</p>
             </div>
+            <Dialog>
+              <DialogTrigger asChild>
+                <Button variant="ghost" size="sm" className="text-primary hover:text-primary/80 hover:bg-white/10 gap-2 h-auto py-1">
+                  <Star className="w-3 h-3 fill-primary" />
+                  <span className="text-[10px] uppercase font-bold tracking-wider">Change Leader</span>
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="bg-white max-w-sm">
+                <DialogHeader>
+                  <DialogTitle>Select Group Leader</DialogTitle>
+                </DialogHeader>
+                <div className="py-4 space-y-3">
+                  <RadioGroup value={String(group.leaderId)} onValueChange={(v) => handleChangeLeader(parseInt(v))}>
+                    {group.members.map((member) => (
+                      <div key={member.id} className="flex items-center justify-between p-3 border rounded-lg hover:bg-slate-50 transition-colors">
+                        <div className="flex items-center gap-3">
+                          <RadioGroupItem value={String(member.id)} id={`leader-${member.id}`} />
+                          <Label htmlFor={`leader-${member.id}`} className="font-medium cursor-pointer">
+                            {member.firstName} {member.lastName || `Member ${member.id}`}
+                          </Label>
+                        </div>
+                        {member.id === group.leaderId && <Star className="w-3 h-3 text-secondary fill-secondary" />}
+                      </div>
+                    ))}
+                  </RadioGroup>
+                </div>
+              </DialogContent>
+            </Dialog>
           </div>
         </div>
 
