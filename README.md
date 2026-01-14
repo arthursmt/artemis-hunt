@@ -214,3 +214,37 @@ To run it locally:
    git clone https://github.com/arthursmt/artemis-finance.git
    cd artemis-finance
 
+2. Install dependencies (from the root):
+npm install
+
+3. Start the development server:
+npm run dev
+If the scripts differ, check the package.json in the root or in the client/ folder and run the appropriate dev script from there.
+   
+9. Roadmap & next steps
+
+Planned extensions of this MVP include:
+
+Completing the Business Data and Financials (P&L) tabs
+
+Adding a simple risk score based on member data and loan configuration
+
+Role-based flows for back-office teams (credit committee, operations)
+
+Audit trail and activity log per proposal
+
+Exporting proposals to a core banking / LOS system
+
+10. Notes for reviewers & recruiters
+
+This repository is part of a product portfolio and is meant to show:
+
+Ability to frame a lending problem and translate policies into product constraints
+
+Design of clear, tablet-friendly flows for field agents
+
+Careful handling of edge cases and validations (dates, amounts, group structure)
+
+Ability to work hands-on with a modern frontend stack to get from concept to a working MVP
+
+If you have questions about the product decisions, trade-offs, or roadmap, feel free to open an issue or reach out via LinkedIn.
