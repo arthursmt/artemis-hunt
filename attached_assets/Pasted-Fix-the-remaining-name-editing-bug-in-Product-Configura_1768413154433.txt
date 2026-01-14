@@ -1,0 +1,44 @@
+Fix the remaining “name editing” bug in Product Configuration: editing First/Middle/Last Name on Member 2+ still changes the leader name. The root cause is state or form bindings not scoped to the active member. Implement the fix so each member has independent Personal Data values, updated by memberId only.
+
+1) Reproduce and locate
+- Open Product Config.
+- Click Member 2 tab.
+- Go to Personal Data.
+- Type in First Name and confirm the leader name changes (bug).
+- Locate the Personal Data form component and the update handler(s) it calls.
+
+2) Make active member selection identity-based
+- The screen must track activeMemberId (string), not activeIndex.
+- activeMember must be derived as: members.find(m => m.id === activeMemberId).
+- Member tabs must set activeMemberId on click.
+
+3) Update writes must target activeMemberId only
+- All Personal Data onChange handlers must call something like updateMember(proposalId, activeMemberId, patch).
+- Remove any code path that writes to members[0] unless activeMemberId === members[0].id.
+- Remove any code path that uses “leader” object as the source of truth for the Personal Data form values.
+
+4) Fix React state reuse (this is the most likely reason it still breaks)
+- Ensure Personal Data form does not keep stale internal state when switching members.
+- Add a key prop to force remount per member:
+  - Render PersonalDataTab with key={activeMemberId}.
+- If PersonalDataTab uses react-hook-form:
+  - Use useEffect with dependency [activeMemberId] and call reset(valuesFromStoreForThatMember).
+- If PersonalDataTab uses local useState:
+  - Prefer removing local state and making inputs fully controlled from the store.
+  - If you keep local state, it MUST reinitialize when activeMemberId changes.
+
+5) Fix tab and sub-tab keys to prevent state bleeding
+- Member tabs must be rendered with stable keys: key={member.id}.
+- Any sub-tab component that holds internal form state should also be keyed by activeMemberId.
+
+6) Leader display rules
+- The leader shown in the dark header must always be derived from members[0] only.
+- Editing Member 2 must not affect header leader name unless Member 2 is actually members[0].
+
+7) Acceptance tests
+- With 2 members, editing Member 2 First Name changes only Member 2.
+- Switching between Member 1 and Member 2 preserves each member’s values correctly.
+- Leader name changes only when editing leader’s own fields or after using Change leader.
+- Save & Exit persists correctly and reopening keeps correct names per member.
+
+Modify the existing ProductConfigScreen and the Personal Data form component (where the inputs and update handlers live). Do not introduce any index-based updates.

@@ -77,6 +77,7 @@ const INSURANCE_DESCRIPTIONS: Record<string, string> = {
 
 import { BusinessDataTab } from "@/components/productConfig/BusinessDataTab";
 import { PnLTab } from "@/components/productConfig/PnLTab";
+import { PersonalDataTab } from "@/components/productConfig/PersonalDataTab";
 
 export default function ProductConfigScreen() {
   const [, setLocation] = useLocation();
@@ -851,132 +852,19 @@ export default function ProductConfigScreen() {
         )}
 
         {activeSection === "personal" && activeMember && (
-          <Card className="border-none shadow-xl bg-white">
+          <Card className="border-none shadow-xl bg-white" key={`personal-${activeMemberId}`}>
             <CardContent className="p-8">
               <h2 className="text-xl font-bold text-slate-900 mb-6">Personal Data</h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-6">
-                <div className="space-y-2">
-                  <Label>First Name <span className="text-red-500">*</span></Label>
-                  <Input value={activeMember.firstName || ""} onChange={(e) => handlePersonalFieldChange("firstName", e.target.value)} />
-                </div>
-                <div className="space-y-2">
-                  <Label>Middle Name</Label>
-                  <Input value={activeMember.middleName || ""} onChange={(e) => handlePersonalFieldChange("middleName", e.target.value)} />
-                </div>
-                <div className="space-y-2">
-                  <Label>Last Name <span className="text-red-500">*</span></Label>
-                  <Input value={activeMember.lastName || ""} onChange={(e) => handlePersonalFieldChange("lastName", e.target.value)} />
-                </div>
-                <div className="space-y-2">
-                  <Label>Document type <span className="text-red-500">*</span></Label>
-                  <Select value={activeMember.documentType || ""} onValueChange={(v) => handlePersonalFieldChange("documentType", v)}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent className="bg-white">
-                      <SelectItem value="ssn">Social Security Number (SSN)</SelectItem>
-                      <SelectItem value="dl">US Driver's License</SelectItem>
-                      <SelectItem value="state_id">State ID</SelectItem>
-                      <SelectItem value="passport">Passport</SelectItem>
-                      <SelectItem value="foreign_id">Foreign Government ID</SelectItem>
-                      <SelectItem value="other">Other</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label>Document ID <span className="text-red-500">*</span></Label>
-                  <Input value={activeMember.documentNumber || ""} onChange={(e) => handlePersonalFieldChange("documentNumber", e.target.value)} />
-                </div>
-                <div className="space-y-2">
-                  <Label>Country of Origin <span className="text-red-500">*</span></Label>
-                  <Select value={activeMember.countryOfOrigin || ""} onValueChange={(v) => handlePersonalFieldChange("countryOfOrigin", v)}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent className="bg-white">
-                      <SelectItem value="United States">United States</SelectItem>
-                      <SelectItem value="Mexico">Mexico</SelectItem>
-                      <SelectItem value="Brazil">Brazil</SelectItem>
-                      <SelectItem value="Guatemala">Guatemala</SelectItem>
-                      <SelectItem value="Honduras">Honduras</SelectItem>
-                      <SelectItem value="Other">Other</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label>Birth Date <span className="text-red-500">*</span></Label>
-                  <Input type="date" value={activeMember.birthDate || ""} onChange={(e) => handlePersonalFieldChange("birthDate", e.target.value)} />
-                </div>
-                <div className="space-y-2">
-                  <Label>Home Address 1 <span className="text-red-500">*</span></Label>
-                  <Input value={activeMember.homeAddress1 || ""} onChange={(e) => handlePersonalFieldChange("homeAddress1", e.target.value)} />
-                </div>
-                <div className="space-y-2">
-                  <Label>Home Address 2</Label>
-                  <Input value={activeMember.homeAddress2 || ""} onChange={(e) => handlePersonalFieldChange("homeAddress2", e.target.value)} />
-                </div>
-                <div className="space-y-2">
-                  <Label>State <span className="text-red-500">*</span></Label>
-                  <Select value={activeMember.state || ""} onValueChange={(v) => handlePersonalFieldChange("state", v)}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent className="bg-white max-h-[300px]">
-                      {US_STATES.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label>City <span className="text-red-500">*</span></Label>
-                  <Input value={activeMember.city || ""} onChange={(e) => handlePersonalFieldChange("city", e.target.value)} />
-                </div>
-                <div className="space-y-2">
-                  <Label>Zip Code <span className="text-red-500">*</span></Label>
-                  <Input value={activeMember.zipCode || ""} onChange={(e) => handlePersonalFieldChange("zipCode", e.target.value)} />
-                </div>
-                <div className="space-y-2">
-                  <Label>Contact 1 Type <span className="text-red-500">*</span></Label>
-                  <Select value={activeMember.contact1Type || "Mobile"} onValueChange={(v) => handlePersonalFieldChange("contact1Type", v)}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent className="bg-white">
-                      <SelectItem value="Mobile">Mobile</SelectItem>
-                      <SelectItem value="Home">Home</SelectItem>
-                      <SelectItem value="Work">Work</SelectItem>
-                      <SelectItem value="WhatsApp">WhatsApp</SelectItem>
-                      <SelectItem value="Other">Other</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label>Contact 1 Number <span className="text-red-500">*</span></Label>
-                  <Input value={activeMember.contact1Number || ""} onChange={(e) => handlePersonalFieldChange("contact1Number", e.target.value)} />
-                </div>
-                <div className="space-y-2">
-                  <Label>Contact 2 Type</Label>
-                  <Select value={activeMember.contact2Type || ""} onValueChange={(v) => handlePersonalFieldChange("contact2Type", v)}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent className="bg-white">
-                      <SelectItem value="Mobile">Mobile</SelectItem>
-                      <SelectItem value="Home">Home</SelectItem>
-                      <SelectItem value="Work">Work</SelectItem>
-                      <SelectItem value="WhatsApp">WhatsApp</SelectItem>
-                      <SelectItem value="Other">Other</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label>Contact 2 Number</Label>
-                  <Input value={activeMember.contact2Number || ""} onChange={(e) => handlePersonalFieldChange("contact2Number", e.target.value)} />
-                </div>
-                <div className="space-y-2">
-                  <Label>Reference Name 1</Label>
-                  <Input value={activeMember.referenceName1 || ""} onChange={(e) => handlePersonalFieldChange("referenceName1", e.target.value)} />
-                </div>
-                <div className="space-y-2">
-                  <Label>Reference Number 1</Label>
-                  <Input value={activeMember.referenceNumber1 || ""} onChange={(e) => handlePersonalFieldChange("referenceNumber1", e.target.value)} />
-                </div>
-              </div>
+              <PersonalDataTab
+                member={activeMember}
+                onChange={handlePersonalFieldChange}
+              />
             </CardContent>
           </Card>
         )}
 
         {activeSection === "business" && activeMember && (
-          <Card className="border-none shadow-xl bg-white">
+          <Card className="border-none shadow-xl bg-white" key={`business-${activeMemberId}`}>
             <CardContent className="p-8">
               <h2 className="text-xl font-bold text-slate-900 mb-6">Business Data</h2>
               <BusinessDataTab 
@@ -989,7 +877,7 @@ export default function ProductConfigScreen() {
         )}
 
         {activeSection === "financials" && activeMember && (
-          <Card className="border-none shadow-xl bg-white">
+          <Card className="border-none shadow-xl bg-white" key={`financials-${activeMemberId}`}>
             <CardContent className="p-8">
               <h2 className="text-xl font-bold text-slate-900 mb-6">Financials (P&L)</h2>
               <PnLTab 
