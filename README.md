@@ -1,190 +1,216 @@
+# Artemis Finance – Credit Platform MVP
+
 Product case study and MVP design of a multi-app credit platform for microfinance and lending operations.
 
-1. Overview
-Artemis is a digital credit platform designed for field credit officers and back-office teams working with microfinance and small-ticket lending.
+This repository currently contains the **Artemis Hunting** app – the tablet-first tool used by field credit agents to prospect clients, build group loan proposals, run basic risk checks and configure loan products before sending them for approval.
 
-The platform is built around group lending, thin-file customers (including immigrants and foreign nationals), and the reality that most credit origination still happens through human relationships in the field — not from behind a desktop.
+---
 
-This repository currently contains the MVP for Artemis Hunting, the commercial app used by credit agents to:
+## 1. Overview
 
-Prospect and qualify clients,
-Originate individual or group loans,
-Run basic risk checks,
-Configure loan products,
-And manage in-progress proposals.
-The rest of the platform (operational, client, and public-facing apps) is documented as product scope and roadmap.
+Traditional microfinance and small-ticket lending still rely heavily on:
 
-2. Product context & problem
-Traditional microfinance operations still rely heavily on:
+- Paper forms and manual data entry  
+- Fragmented tools (WhatsApp, spreadsheets, legacy core systems)  
+- Little or no support for **group lending**  
+- Poor visibility of portfolio quality at the agent level  
 
-Paper forms and manual data entry,
-Fragmented tools (WhatsApp, spreadsheets, legacy core systems),
-Limited or no support for group lending,
-Poor visibility of portfolio quality at the agent level,
-Weak support for clients without standard credit files (no SSN, recent immigrants, informal businesses).
-This creates a few core problems:
+Artemis Finance is a product concept for a digital credit platform designed around two realities:
 
-Inefficient origination: agents spend time chasing documents instead of selling and managing risk.
-Opaque risk: little real-time visibility into delinquency and exposure per agent.
-Exclusion of non-standard clients: foreign nationals and informal businesses are often rejected by process, not by actual risk.
-Artemis aims to fix this by:
+1. Many borrowers are **thin-file customers** (immigrants, foreign nationals, informal workers).  
+2. Most credit origination still happens through **human relationships in the field**, not in a branch.
 
-Digitizing the entire field workflow end-to-end,
-Structuring data so underwriting and operations can scale,
-Supporting group-based guarantees rather than collateral,
-Still keeping the human relationship at the center of the model.
-3. Artemis platform – app ecosystem
-The full platform is designed as four interconnected applications:
+This MVP focuses on the **field agent experience**. The goal is to show how a well-designed workflow and validations can reduce operational risk while keeping the UI fast and simple for agents who are working under time and connectivity pressure.
 
-Artemis Hunting – Commercial App (this MVP)
+---
 
-Tablet-first app for field credit officers.
-Prospecting, group formation, loan origination, and pipeline management.
-Artemis Care – Operational / Back-office App (planned)
+## 2. What this MVP does
 
-Web application for risk, compliance, and operations teams.
-Document review, risk workflows, exception handling, disbursement approvals.
-Artemis Harvesting – Client App (planned)
+From the point of view of a **credit agent**, the Artemis Hunting MVP allows them to:
 
-Mobile app for borrowers.
-Payment schedule, reminders, renewals, and basic self-service.
-Artemis Web – Public site (planned)
+- View an **“On Going Proposals”** list and resume partially completed applications  
+- Start a **new credit proposal** for an individual or a group  
+- Build a **group loan** with up to 5 members  
+- Capture each member’s:
+  - Loan configuration (Loan Details tab)  
+  - Personal data  
+  - Business data (planned)  
+  - Simple P&L / financials (planned)
 
-Marketing and information hub.
-Education, product information, and lead capture.
-This repository focuses on the Hunting MVP, but its data model and flows are designed to plug into the broader platform later.
+The current implementation focuses on two screens:
 
-4. Artemis Hunting MVP – what this app does
-The Artemis Hunting MVP is a tablet-oriented web app for Samsung Active-class devices (10" screens), built as a responsive React application.
+1. **Proposals List (Dashboard)**  
+   - Shows all ongoing proposals with client name, amount, status and actions  
+   - Allows the agent to open a proposal, continue filling, view details or delete it  
+   - Preserves data when the agent edits a proposal and comes back later  
 
-4.1. Dashboard
-The Dashboard gives the credit officer a portfolio-level view of their performance:
+2. **Product Configuration / Member Form**  
+   - Header with **Group ID**, **Leader name** and **base credit rate**  
+   - Tabs for each member (1…N), always keeping the group leader in position #1  
+   - Inside each member, sub-tabs:
+     - **Loan Details** (implemented)
+     - **Personal Data** (implemented)
+     - **Business Data** (placeholder)
+     - **Financials (P&L)** (placeholder)
 
-Credit Portfolio – total outstanding portfolio and target progress.
-Active Clients – current count and target progress.
-Delinquency Rate – % of portfolio in arrears with target tracking.
-Pipeline Overview – cards by workflow stage:
-On Going (incomplete proposals),
-Under Eval (completed, under review),
-Completed (recent approvals),
-Renewals (contracts near maturity),
-Collections (past-due cases).
-Each pipeline card can surface priority markers so the agent knows where to act first (prospecting, renewing, or collecting).
+---
 
-4.2. New Proposal & members
-From New Proposal, the agent can originate:
+## 3. Loan Details – UX and business rules
 
-Group loans (default and key differentiator),
-Individual loans (optional mode).
-Key behaviors:
+The **Loan Details** tab is designed to be clear on a tablet screen while enforcing key credit policies.
 
-Each member has:
-First, middle (optional), and last name,
-ID document type (SSN, ITIN, US Driver’s License / State ID, Passport, Foreign Government ID),
-Document number,
-Requested amount (with currency formatting and maximum loan limit per client).
-Group proposals support multiple members, with:
-Add/remove member tabs,
-Validation on required fields,
-Confirmation when removing existing members.
-This design explicitly supports immigrant and foreign clients, not just people with US SSN.
+### Fields and behaviour
 
-4.3. Credit validation (mock risk engine)
-After data entry, the app runs a validation step (front-end only for now, with mocked statuses) to simulate:
+- **Loan value ($)**
+  - Prefilled from the initial prospecting step  
+  - Formatted as US currency (supports cents/decimals)  
+  - Adjustable via four quick buttons: `+500`, `+1k`, `-500`, `-1k`  
+  - Business rules:
+    - Minimum: **$500**
+    - Maximum: **$50,000**
+    - Errors are shown inline if the user goes out of range
 
-Credit bureau checks,
-AML / anti-money-laundering screening,
-Internal risk criteria.
-Per member, the UI shows:
+- **Loan type**
+  - Dropdown (Working capital, Investment, Other)  
+  - Defaults to **Working capital**
 
-Pending → Approved / Denied per check,
-A global status panel (Validation in Progress, Validation Approved, or Validation Denied),
-The requested amount for that member.
-Rules:
+- **Interest rate (APR, % per year)**
+  - Non-editable field  
+  - Default: **14% APR fixed** (base credit rate shown in the header)
 
-If all members are denied and removed, the flow returns to Home.
-If there is at least one approved member, the group can proceed, but all denied members must be removed before continuing.
-4.4. Product Configuration (multi-step form per member)
-Once validation passes, the agent clicks Continue to Product Config.
-At this moment, the app creates a Proposal record in a local store so it can be resumed later.
+- **Number of installments**
+  - Dropdown list from **3 to 12 months**  
+  - Changes here automatically recalculate the monthly installment
 
-For each member, Product Config is structured as:
+- **First payment date**
+  - Date picker with two rules:
+    - Must be **within 60 days** from today  
+    - Must be **on or before the 15th** of the chosen month  
+  - If the agent tries to pick an invalid date, an error explains why
 
-Personal Details
+- **Grace period (days)**
+  - Read-only field  
+  - Calculated automatically as the number of days between **today** and the selected **first payment date**
 
-Reuses name + document data from New Proposal,
-US-style address (Address 1, Address 2, State, City, ZIP),
-Up to three contact numbers (first mobile number required),
-Optional references.
-Business Details
+- **Loan goal**
+  - Dropdown with options like Inventory, Equipment purchase, Working capital, Debt consolidation, Other  
+  - When the agent selects **Other**, an **“Other goal (optional)”** text field appears
 
-Business name and phone,
-Business address (with “Same as client address” checkbox + auto-fill).
-Financial Profile
+---
 
-Simplified assets and liabilities (cash, inventory, equipment, debts, etc.),
-Automatic calculation of:
-Total assets,
-Total liabilities,
-Net position / payment capacity (assets – liabilities).
-Loan Proposal
+## 4. Insurance logic & monthly payment summary
 
-Requested amount (validated and formatted; max 50,000),
-Number of installments (4–12),
-Loan purpose (Working capital or Investment),
-Interest rate (pre-defined range, e.g. 14–16%),
-First repayment date:
-60-day grace period from today,
-First payment scheduled in the first half of the following month (days 1–15).
-The UI is designed so the agent can move between members and steps without losing data.
+The app also helps the agent explain the **real monthly cost** of the loan.
 
-4.5. On Going proposals & resume flow
-After or during Product Config, the officer can go Back to Home.
-The proposal is kept as ON GOING in a central store.
+### Borrower’s Insurance (Credit Life)
 
-From the Dashboard:
+- Boolean/toggle: **Yes / No** (defaults to **Yes**)  
+- Premium is **2% of the principal (loan value)** – no interest applied  
+- The UI shows:
+  - Total cost of credit life insurance  
+  - Monthly share included in the payment summary
 
-The On Going card opens a list of active proposals.
-Each row shows:
-Leader name,
-Total requested amount,
-Date created,
-Status pill (ON GOING),
-Actions:
-Keep filling → returns to Product Config for that specific proposal,
-View details → group/members summary (names, primary phone, requested amount, address),
-Delete → with confirmation, removes the proposal and all local data.
-This mirrors the real-world reality of agents starting, pausing, and resuming proposals across multiple days and visits.
+### Optional insurances
 
-5. Architecture & tech stack
-Current implementation (MVP):
+Three cascading dropdowns:
 
-Front-end: React (JavaScript), single-page application.
-State management: React state + custom context for Proposals store.
-UI: custom components styled to match the Artemis brand (white background, blue primary, yellow/green accents).
-The proposals store:
+1. **Optional insurance 1**  
+2. **Optional insurance 2** (only appears if #1 ≠ None)  
+3. **Optional insurance 3** (only appears if #2 ≠ None)
 
-Holds all ON GOING proposals in memory (and can optionally be persisted to localStorage),
-Exposes basic operations:
-Create from validated group,
-Update as forms are filled,
-Delete proposals,
-Query by id for Product Config and Details screens.
-As the platform evolves, this front-end is intended to integrate with:
+Current options and example pricing:
 
-Real credit bureau APIs,
-AML / KYC services,
-A core banking or loan management system.
-6. Repository layout
-The exact layout may evolve, but the intent is to host all apps and docs in a single repository.
+- **Health Plus** – \$40/month – “Provides extra protection in case of major medical events.”  
+- **Work Loss** – \$20/month – “Helps cover your loan payments if you lose your job.”  
+- **Income Protection** – \$30/month – “Offers a safety net if your income is temporarily reduced.”  
+- **None**
 
-Suggested structure:
+For each selected insurance:
 
-.
-├── apps
-│   └── hunting-mvp        # Front-end for Artemis Hunting (this MVP)
-├── docs
-│   ├── concept-deck       # Pitch deck / product concept slides
-│   └── ux                 # Screen designs and UX flows
-├── LICENSE
-└── README.md
+- The dropdown label includes the monthly price  
+- An info icon (`i`) opens a short explanation  
+- The **Summary** section adds up all selected insurance premiums.
+
+### Summary Box
+
+At the bottom of the Loan Details tab, a summary card displays:
+
+- **Base monthly installment** (principal + interest, fixed-installment formula)  
+- **Credit life insurance – monthly share**  
+- **Optional insurances – total monthly**  
+- **Interest rate** (14% APR)  
+- **First payment date** and **due day of month**  
+- **Total monthly payment** = installment + all insurances  
+
+This is designed to support transparent conversations with the client and reduce future disputes about the actual payment amount.
+
+---
+
+## 5. Personal Data tab
+
+Each group member has a **Personal Data** form with validation for mandatory fields.  
+
+Fields include:
+
+- First name, Middle name, Last name  
+- Document type (e.g., SSN, Driver’s License)  
+- Document ID  
+- Country of origin  
+- Birth date  
+- Home address (1 & 2)  
+- State, City, ZIP code  
+- Up to **three contact numbers** (type + number)  
+- Up to **two references** (name + phone)
+
+Mandatory fields are clearly marked and validated when the agent saves or navigates away.
+
+---
+
+## 6. Group management & leader logic
+
+The proposal is always a **group**, even if it has one member.
+
+- The agent can **add members** up to a maximum of **five**  
+- Members keep their position in the tab bar (no unexpected reordering)  
+- The group leader is always shown as **Member 1**  
+- There is an option to **change the leader**:
+  - Opens a dialog listing existing members
+  - After confirmation, the chosen leader moves to position #1
+  - All other members keep their relative order
+
+Data for each member (Loan Details + Personal Data) is persisted so that proposals can be resumed from the dashboard.
+
+---
+
+## 7. Architecture & tech stack
+
+This repository is organized as a small monorepo:
+
+- `client/` – **Artemis Hunting** web app (React + TypeScript + Vite, styled for tablet use)  
+- `backend/`, `server/` – API and infrastructure scaffolding from the Replit stack, used for future evolution of the platform  
+- `shared/` – Shared utilities and types (e.g. proposal store, domain models)  
+- `attached_assets/` – Design and prompt assets used while iterating on the product  
+
+Key technologies:
+
+- **React** + **TypeScript**  
+- Modern React state management (proposal store for groups and members)  
+- Tailwind-style utility classes for layout and spacing  
+- Simple persistence layer behind the proposal store (via Replit stack and SQL/ORM config)
+
+> This is intentionally scoped as an MVP. The focus is on **product design, UX, and business rules**, not on building a full production-grade backend.
+
+---
+
+## 8. Running the project
+
+This project is developed primarily in **Replit**.
+
+To run it locally:
+
+1. Clone the repository:
+
+   ```bash
+   git clone https://github.com/arthursmt/artemis-finance.git
+   cd artemis-finance
+
