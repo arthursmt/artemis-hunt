@@ -86,9 +86,17 @@ export function BusinessDataTab({ member, onChange, errors }: BusinessDataTabPro
         </Select>
       </div>
 
-      <div className="flex items-center justify-between p-4 bg-slate-50 rounded-lg">
-        <Label>Multiple Businesses?</Label>
-        <Switch checked={data.multipleBusiness} onCheckedChange={(v) => handleChange("multipleBusiness", v)} />
+      <div className="flex items-center justify-between py-2 px-1">
+        <div className="space-y-0.5">
+          <Label className="text-base cursor-pointer" onClick={() => handleChange("multipleBusiness", !data.multipleBusiness)}>
+            Multiple Businesses?
+          </Label>
+        </div>
+        <Switch 
+          checked={data.multipleBusiness} 
+          onCheckedChange={(v) => handleChange("multipleBusiness", v)}
+          className="data-[state=checked]:bg-primary"
+        />
       </div>
 
       <div className="grid grid-cols-2 gap-4">
