@@ -38,13 +38,13 @@ export default function Home() {
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-10">
         
         {/* Welcome Section */}
-        <section className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4 animate-in fade-in slide-in-from-bottom-2 duration-500">
+        <section className="flex justify-between items-center animate-in fade-in slide-in-from-bottom-2 duration-500">
           <div>
             <h2 className="text-3xl font-display font-bold text-slate-900">Dashboard</h2>
-            <p className="text-slate-500 mt-1 text-lg">Here's what's happening with your portfolio today.</p>
+            <p className="text-slate-500 mt-1 text-lg font-normal">Here's what's happening with your portfolio today.</p>
           </div>
           <Link href="/new-proposal">
-            <Button size="lg" className="bg-primary hover:bg-primary/90 text-white font-semibold shadow-lg shadow-primary/25 rounded-xl px-8 transition-transform hover:-translate-y-0.5 active:translate-y-0">
+            <Button size="lg" className="bg-primary hover:bg-primary/90 text-white font-semibold shadow-lg shadow-primary/25 rounded-xl px-8 transition-transform hover:-translate-y-0.5 active:translate-y-0 h-12">
               <Plus className="w-5 h-5 mr-2" />
               New Proposal
             </Button>
@@ -102,14 +102,14 @@ export default function Home() {
 
         {/* Pipeline Overview */}
         <section className="w-full">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-xl font-display font-bold text-slate-900 flex items-center gap-2">
-              <div className="w-1.5 h-6 bg-secondary rounded-full"></div>
+          <div className="flex items-center justify-between mb-6">
+            <h3 className="text-xl font-display font-bold text-slate-900 flex items-center gap-3">
+              <div className="w-1.5 h-6 bg-[#EAB308] rounded-full"></div>
               Pipeline Overview
             </h3>
           </div>
           
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+          <div className="grid grid-cols-5 gap-6">
             {isLoadingContracts ? (
               Array(5).fill(0).map((_, i) => <Skeleton key={i} className="h-40 rounded-2xl" />)
             ) : (

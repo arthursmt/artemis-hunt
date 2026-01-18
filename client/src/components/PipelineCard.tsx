@@ -14,16 +14,14 @@ interface PipelineCardProps {
 }
 
 const colorMap = {
-  blue: "bg-blue-50 text-blue-600 border-blue-100 hover:border-blue-300",
-  yellow: "bg-amber-50 text-amber-600 border-amber-100 hover:border-amber-300",
-  green: "bg-emerald-50 text-emerald-600 border-emerald-100 hover:border-emerald-300",
-  red: "bg-rose-50 text-rose-600 border-rose-100 hover:border-rose-300",
-  indigo: "bg-indigo-50 text-indigo-600 border-indigo-100 hover:border-indigo-300",
+  blue: "bg-[#EFF6FF] text-[#2563EB] border-[#DBEAFE] hover:border-[#BFDBFE]",
+  yellow: "bg-[#FFFBEB] text-[#D97706] border-[#FEF3C7] hover:border-[#FDE68A]",
+  green: "bg-[#F0FDF4] text-[#16A34A] border-[#DCFCE7] hover:border-[#BBF7D0]",
+  red: "bg-[#FEF2F2] text-[#DC2626] border-[#FEE2E2] hover:border-[#FECACA]",
+  indigo: "bg-[#F5F3FF] text-[#7C3AED] border-[#EDE9FE] hover:border-[#DDD6FE]",
 };
 
 export function PipelineCard({ title, count, href, color, icon, delay = 0 }: PipelineCardProps) {
-  const hasActionDot = ["On Going", "Renewals", "Collections"].includes(title);
-
   return (
     <Link href={href}>
       <div 
@@ -34,28 +32,33 @@ export function PipelineCard({ title, count, href, color, icon, delay = 0 }: Pip
           "animate-in zoom-in-95 duration-500 h-full",
         )}>
           <Card className={cn(
-            "h-full border-2 transition-all duration-300 flex flex-col justify-between hover:shadow-lg hover:-translate-y-1 relative",
+            "h-full border-2 transition-all duration-300 flex flex-col justify-between hover:shadow-lg relative rounded-2xl",
             colorMap[color]
           )}>
-            {hasActionDot && (
-              <div className="absolute top-4 left-4 w-2 h-2 bg-amber-500 rounded-full z-10" />
-            )}
-            <CardContent className="p-4">
-              <div className="flex justify-between items-start mb-3">
-                <div className="p-2 rounded-lg bg-white/60 backdrop-blur-sm shadow-sm">
+            <CardContent className="p-5">
+              <div className="flex justify-between items-start mb-6">
+                <div className="p-2.5 rounded-xl bg-white shadow-sm ring-1 ring-black/5">
                   {icon}
                 </div>
-                <div className="text-2xl font-display font-bold opacity-90 tracking-tight">
+                <div className="text-4xl font-display font-bold tracking-tight">
                   {count}
                 </div>
               </div>
-              <h3 className="text-base font-bold font-display">{title}</h3>
+              <h3 className="text-xl font-bold font-display text-slate-900">{title}</h3>
             </CardContent>
             
-            <CardFooter className="p-4 pt-0 mt-auto">
-              <div className="w-full flex items-center justify-between text-xs font-medium opacity-70 group-hover:opacity-100 transition-opacity">
-                <span>View details</span>
-                <ChevronRight className="w-3.5 h-3.5 transform group-hover:translate-x-1 transition-transform" />
+            <CardFooter className="p-5 pt-0 mt-auto">
+              <div className="w-full flex items-center justify-between text-sm font-semibold transition-colors">
+                <span className={cn(
+                  color === "blue" ? "text-[#2563EB]" :
+                  color === "yellow" ? "text-[#D97706]" :
+                  color === "green" ? "text-[#16A34A]" :
+                  color === "red" ? "text-[#DC2626]" :
+                  "text-[#7C3AED]"
+                )}>
+                  View details
+                </span>
+                <ChevronRight className="w-4 h-4 transform group-hover:translate-x-1 transition-transform" />
               </div>
             </CardFooter>
           </Card>
