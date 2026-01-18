@@ -1,0 +1,59 @@
+Make the Home/Dashboard layout match EXACTLY the reference screenshot provided (cards aligned, pipeline in one row with 5 smaller cards, no horizontal scroll). Update only layout/styling; do not change data logic or navigation.
+
+1) Target file
+- Home/Dashboard page component (the page that renders “Dashboard” and “Pipeline Overview”).
+
+2) Page header row (top of content)
+- Left: Title “Dashboard” and subtitle “Here’s what’s happening with your portfolio today.”
+- Right: Primary button “+ New Proposal” aligned horizontally with the title area (same row).
+- Keep the top app header (logo, search, agent) unchanged.
+
+3) KPI cards row (3 cards)
+- Keep 3 KPI cards in a single row.
+- Use equal widths, same height, same spacing.
+- Ensure the cards and the Pipeline section below share the same left/right gutters (same container width and padding).
+
+4) Pipeline Overview section (the important part)
+- Title “Pipeline Overview” with a small vertical accent bar to the left (yellow/orange) exactly like the screenshot.
+- Under the title, render FIVE pipeline cards in a single row:
+  - On Going
+  - Under Eval
+  - Completed
+  - Renewals
+  - Collections
+- Absolutely no horizontal scrolling/dragging. All 5 must fit on the tablet width.
+- Cards must be smaller than KPI cards and consistent size across all 5.
+- Use a 5-column grid for the pipeline cards: grid-cols-5.
+- Use a moderate gap similar to screenshot (not huge).
+
+5) Pipeline card internal layout (match screenshot)
+Each pipeline card must have:
+- Top-left: rounded icon container with the stage icon inside.
+- Top-right: large count number (bold).
+- Middle-left: stage title (bold).
+- Bottom-left: “View details” link in the stage color.
+- Bottom-right: small chevron arrow aligned with the “View details” row.
+- Card background should be a very light tint matching each stage (blue/yellow/green/purple/red).
+- Card border radius and shadow subtle, consistent with KPI cards.
+
+6) Exact sizing guidance (use Tailwind)
+- Wrap the whole page content in the same container used for KPIs:
+  - max width centered with consistent horizontal padding (reuse existing container classes from KPI section).
+- Pipeline grid:
+  - className should be like: "grid grid-cols-5 gap-6"
+- Pipeline card size:
+  - Reduce padding to p-5 (or p-4 if needed to fit).
+  - Ensure no min-width is applied.
+  - Ensure the count uses a large font but does not overflow (e.g., text-4xl).
+  - Ensure “View details” is small (e.g., text-sm) and stays on one line.
+
+7) Remove any previous horizontal-scroll implementation
+- Remove flex + overflow-x-auto wrappers and any min-w-[...] wrappers around pipeline cards.
+- The pipeline section must be purely grid-based.
+
+8) Final acceptance criteria (must pass)
+- The Pipeline Overview shows all five cards on one row without scrolling.
+- The pipeline row aligns perfectly with the KPI cards above (same left/right margins).
+- Card sizes and spacing visually match the screenshot: smaller pipeline cards, larger KPI cards.
+- “+ New Proposal” button is on the right of the Dashboard header row.
+- No behavior changes: clicking “View details” still navigates correctly.

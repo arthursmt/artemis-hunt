@@ -1,17 +1,81 @@
-import { useProposalStore } from "@/lib/proposalStore";
+import { useProposalStore, ProposalWithData } from "@/lib/proposalStore";
 import { PageHeader } from "@/components/PageHeader";
-import { StatusBadge } from "@/components/StatusBadge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ArrowLeft, Play, Calendar, Trash2, Eye } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { format } from "date-fns";
+import { Progress } from "@/components/ui/progress";
+
+const getProposalCompletion = (proposal: ProposalWithData): number => {
+  let score = 0;
+  const data = proposal.data || {};
+  const group = data.group || { members: [] };
+
+  // A) Prospecting / group basics (25%)
+  const leader = group.members.find((m: any) => m.id === group.leaderId) || group.members[0];
+  if (leader && leader.firstName && leader.lastName) score += 10;
+  if (proposal.totalAmount > 0) score += 10;
+  if (group.members.length > 0) score += 5;
+
+  // B) Validation step done (25%)
+  if (data.validationCompleted) {
+    score += 25;
+  } else if (data.creditValidation) {
+    score += 15;
+  }
+
+  // C) Product Config - Loan Details (25%)
+  // D) Product Config - Personal Data (25%)
+  if (group.members.length > 0) {
+    let loanScoreTotal = 0;
+    let personalScoreTotal = 0;
+
+    group.members.forEach((member: any) => {
+      const loanDetails = data.loanDetailsByMember?.[member.id];
+      if (loanDetails) {
+        let memberLoanScore = 0;
+        if (loanDetails.installments) memberLoanScore += 5;
+        if (loanDetails.firstPaymentDate) memberLoanScore += 5;
+        if (loanDetails.loanType) memberLoanScore += 5;
+        if (loanDetails.loanGoal) memberLoanScore += 5;
+        if (loanDetails.borrowersInsurance !== undefined) memberLoanScore += 5;
+        loanScoreTotal += memberLoanScore;
+      }
+
+      let memberPersonalScore = 0;
+      const personalFields = [
+        'firstName', 'lastName', 'documentType', 'documentNumber',
+        'countryOfOrigin', 'birthDate', 'homeAddress1', 'state',
+        'city', 'zipCode', 'contact1Type', 'contact1Number'
+      ];
+      personalFields.forEach(field => {
+        if (member[field]) memberPersonalScore += (25 / personalFields.length);
+      });
+      personalScoreTotal += memberPersonalScore;
+    });
+
+    score += (loanScoreTotal / group.members.length);
+    score += (personalScoreTotal / group.members.length);
+  }
+
+  return Math.min(100, Math.round(score));
+};
 
 export default function OnGoingProposals() {
   const { proposals, deleteProposal } = useProposalStore();
   const [, setLocation] = useLocation();
-  const ongoing = proposals.filter(p => p.status === 'on_going');
+  
+  const ongoing = proposals
+    .filter(p => p.status === 'on_going')
+    .map(p => ({ ...p, completion: getProposalCompletion(p) }))
+    .sort((a, b) => {
+      if (b.completion !== a.completion) {
+        return b.completion - a.completion;
+      }
+      return new Date(b.dateCreated).getTime() - new Date(a.dateCreated).getTime();
+    });
 
   const handleDelete = (id: string) => {
     if (window.confirm("Delete proposal\n\nAre you sure you want to delete this proposal? This will remove all related data and cannot be undone.")) {
@@ -53,10 +117,10 @@ export default function OnGoingProposals() {
                 <TableHeader>
                   <TableRow className="hover:bg-transparent">
                     <TableHead className="font-semibold text-slate-900">Client Name</TableHead>
+                    <TableHead className="font-semibold text-slate-900">Completion</TableHead>
                     <TableHead className="font-semibold text-slate-900">Amount</TableHead>
-                    <TableHead className="font-semibold text-slate-900">Date Created</TableHead>
-                    <TableHead className="font-semibold text-slate-900">Status</TableHead>
-                    <TableHead className="text-right font-semibold text-slate-900">Actions</TableHead>
+                    <TableHead className="text-center font-semibold text-slate-900">Actions</TableHead>
+                    <TableHead className="text-right font-semibold text-slate-900">Created Date</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -65,49 +129,52 @@ export default function OnGoingProposals() {
                       <TableCell className="font-medium text-slate-900">
                         {proposal.leaderName}
                       </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-3 min-w-[120px]">
+                          <Progress value={proposal.completion} className="h-2 flex-1" />
+                          <span className="text-sm font-semibold text-slate-700">{proposal.completion}%</span>
+                        </div>
+                      </TableCell>
                       <TableCell className="font-mono text-slate-600">
                         {new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(proposal.totalAmount)}
                       </TableCell>
-                      <TableCell className="text-slate-500">
-                        <div className="flex items-center gap-2">
-                          <Calendar className="w-3 h-3" />
-                          {format(new Date(proposal.dateCreated), 'MMM dd, yyyy')}
-                        </div>
-                      </TableCell>
                       <TableCell>
-                        <StatusBadge status="on_going" />
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex flex-col gap-2 w-full max-w-[200px] ml-auto">
+                        <div className="flex items-center justify-center gap-2">
                           <Button 
                             variant="default" 
                             size="sm" 
-                            className="bg-primary hover:bg-primary/90 text-white font-semibold h-9 w-full rounded-lg shadow-sm"
+                            className="bg-primary hover:bg-primary/90 text-white font-semibold h-9 rounded-lg shadow-sm px-4 whitespace-nowrap"
                             onClick={() => setLocation(`/product-config/${proposal.id}`)}
                             data-testid={`button-keep-filling-${proposal.id}`}
                           >
                             Keep filling <Play className="w-3 h-3 ml-2 fill-current" />
                           </Button>
-                          <div className="flex items-center justify-between px-1">
-                            <Button 
-                              variant="ghost" 
-                              size="sm" 
-                              className="text-slate-500 hover:text-primary h-auto p-0 text-sm font-medium hover:bg-transparent"
-                              onClick={() => setLocation(`/ongoing/${proposal.id}/details`)}
-                              data-testid={`button-view-details-${proposal.id}`}
-                            >
-                              View details
-                            </Button>
-                            <Button 
-                              variant="ghost" 
-                              size="sm" 
-                              className="text-red-500 hover:text-red-700 h-auto p-0 text-sm font-medium hover:bg-transparent"
-                              onClick={() => handleDelete(String(proposal.id))}
-                              data-testid={`button-delete-${proposal.id}`}
-                            >
-                              Delete
-                            </Button>
-                          </div>
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            className="text-slate-500 hover:text-primary h-9 w-9 p-0"
+                            onClick={() => setLocation(`/ongoing/${proposal.id}/details`)}
+                            data-testid={`button-view-details-${proposal.id}`}
+                            title="View details"
+                          >
+                            <Eye className="w-4 h-4" />
+                          </Button>
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            className="text-red-500 hover:text-red-700 h-9 w-9 p-0"
+                            onClick={() => handleDelete(String(proposal.id))}
+                            data-testid={`button-delete-${proposal.id}`}
+                            title="Delete"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-right text-slate-500">
+                        <div className="flex items-center justify-end gap-2">
+                          <Calendar className="w-3 h-3" />
+                          {format(new Date(proposal.dateCreated), 'MMM dd, yyyy')}
                         </div>
                       </TableCell>
                     </TableRow>
