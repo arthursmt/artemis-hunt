@@ -119,8 +119,8 @@ export default function OnGoingProposals() {
                     <TableHead className="font-semibold text-slate-900">Client Name</TableHead>
                     <TableHead className="font-semibold text-slate-900">Completion</TableHead>
                     <TableHead className="font-semibold text-slate-900">Amount</TableHead>
-                    <TableHead className="text-center font-semibold text-slate-900">Actions</TableHead>
                     <TableHead className="text-right font-semibold text-slate-900">Created Date</TableHead>
+                    <TableHead className="text-center font-semibold text-slate-900">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -131,12 +131,18 @@ export default function OnGoingProposals() {
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-3 min-w-[120px]">
-                          <Progress value={proposal.completion} className="h-2 flex-1" />
+                          <Progress value={proposal.completion} className="h-2 flex-1 bg-slate-200 [&>div]:bg-primary" />
                           <span className="text-sm font-semibold text-slate-700">{proposal.completion}%</span>
                         </div>
                       </TableCell>
                       <TableCell className="font-mono text-slate-600">
                         {new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(proposal.totalAmount)}
+                      </TableCell>
+                      <TableCell className="text-right text-slate-500">
+                        <div className="flex items-center justify-end gap-2">
+                          <Calendar className="w-3 h-3" />
+                          {format(new Date(proposal.dateCreated), 'MMM dd, yyyy')}
+                        </div>
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center justify-center gap-2">
@@ -169,12 +175,6 @@ export default function OnGoingProposals() {
                           >
                             <Trash2 className="w-4 h-4" />
                           </Button>
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-right text-slate-500">
-                        <div className="flex items-center justify-end gap-2">
-                          <Calendar className="w-3 h-3" />
-                          {format(new Date(proposal.dateCreated), 'MMM dd, yyyy')}
                         </div>
                       </TableCell>
                     </TableRow>
