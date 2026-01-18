@@ -101,57 +101,73 @@ export default function Home() {
         </section>
 
         {/* Pipeline Overview */}
-        <section>
-          <h3 className="text-xl font-display font-bold text-slate-900 mb-6 flex items-center gap-2">
-            <div className="w-1.5 h-6 bg-secondary rounded-full"></div>
-            Pipeline Overview
-          </h3>
+        <section className="w-full">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-xl font-display font-bold text-slate-900 flex items-center gap-2">
+              <div className="w-1.5 h-6 bg-secondary rounded-full"></div>
+              Pipeline Overview
+            </h3>
+          </div>
           
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+          <div className="flex gap-6 overflow-x-auto pb-3 snap-x snap-mandatory [-webkit-overflow-scrolling:touch]">
             {isLoadingContracts ? (
-              Array(5).fill(0).map((_, i) => <Skeleton key={i} className="h-48 rounded-2xl" />)
+              Array(5).fill(0).map((_, i) => (
+                <div key={i} className="snap-start min-w-[340px] max-w-[340px] flex-shrink-0">
+                  <Skeleton className="h-48 rounded-2xl" />
+                </div>
+              ))
             ) : (
               <>
-                <PipelineCard 
-                  title="On Going" 
-                  count={ongoingCount} 
-                  href="/ongoing" 
-                  color="blue"
-                  icon={<FileText className="w-6 h-6" />}
-                  delay={100}
-                />
-                <PipelineCard 
-                  title="Under Eval" 
-                  count={evaluationCount} 
-                  href="/under-evaluation" 
-                  color="yellow"
-                  icon={<Search className="w-6 h-6" />}
-                  delay={200}
-                />
-                <PipelineCard 
-                  title="Completed" 
-                  count={completedCount} 
-                  href="/completed" 
-                  color="green"
-                  icon={<CheckCircle2 className="w-6 h-6" />}
-                  delay={300}
-                />
-                <PipelineCard 
-                  title="Renewals" 
-                  count={renewalCount} 
-                  href="/renewals" 
-                  color="indigo"
-                  icon={<RefreshCcw className="w-6 h-6" />}
-                  delay={400}
-                />
-                <PipelineCard 
-                  title="Collections" 
-                  count={collectionCount} 
-                  href="/collections" 
-                  color="red"
-                  icon={<AlertCircle className="w-6 h-6" />}
-                  delay={500}
-                />
+                <div className="snap-start min-w-[340px] max-w-[340px] flex-shrink-0">
+                  <PipelineCard 
+                    title="On Going" 
+                    count={ongoingCount} 
+                    href="/ongoing" 
+                    color="blue"
+                    icon={<FileText className="w-6 h-6" />}
+                    delay={100}
+                  />
+                </div>
+                <div className="snap-start min-w-[340px] max-w-[340px] flex-shrink-0">
+                  <PipelineCard 
+                    title="Under Eval" 
+                    count={evaluationCount} 
+                    href="/under-evaluation" 
+                    color="yellow"
+                    icon={<Search className="w-6 h-6" />}
+                    delay={200}
+                  />
+                </div>
+                <div className="snap-start min-w-[340px] max-w-[340px] flex-shrink-0">
+                  <PipelineCard 
+                    title="Completed" 
+                    count={completedCount} 
+                    href="/completed" 
+                    color="green"
+                    icon={<CheckCircle2 className="w-6 h-6" />}
+                    delay={300}
+                  />
+                </div>
+                <div className="snap-start min-w-[340px] max-w-[340px] flex-shrink-0">
+                  <PipelineCard 
+                    title="Renewals" 
+                    count={renewalCount} 
+                    href="/renewals" 
+                    color="indigo"
+                    icon={<RefreshCcw className="w-6 h-6" />}
+                    delay={400}
+                  />
+                </div>
+                <div className="snap-start min-w-[340px] max-w-[340px] flex-shrink-0">
+                  <PipelineCard 
+                    title="Collections" 
+                    count={collectionCount} 
+                    href="/collections" 
+                    color="red"
+                    icon={<AlertCircle className="w-6 h-6" />}
+                    delay={500}
+                  />
+                </div>
               </>
             )}
           </div>
