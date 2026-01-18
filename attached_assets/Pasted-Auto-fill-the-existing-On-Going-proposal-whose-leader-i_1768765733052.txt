@@ -1,0 +1,75 @@
+Auto-fill the existing On Going proposal whose leader is “Luci Machado” with realistic random data so that it becomes 100% complete according to the current completion logic, and therefore shows 100% on the /ongoing list.
+
+1) Identify the target proposal
+- Find the proposal in the proposal store where the leader/member[0] display name is “Luci Machado”.
+- Use its proposalId and ensure we update THAT exact proposal.
+
+2) Ensure minimum group size for completion base
+- If the proposal currently has fewer than 3 members, automatically add members until it has exactly 3.
+- If it has 3 or more members already, do not remove members.
+
+3) Fill ALL required fields for ALL members (3+)
+For EACH member, populate all required fields across all pages:
+A) Loan Details (required)
+- loanValue: set to a valid amount within min/max (e.g., 5,500)
+- loanType: Working capital (or another valid option)
+- installments: valid selection (e.g., 6 or 9)
+- firstPaymentDate: a valid date <= 60 days from today AND day-of-month between 1 and 15 inclusive
+- loanGoal: valid selection (if “Other”, also fill otherGoal)
+- borrowerInsurance: true (or a valid default)
+- optional insurances: choose valid values (None is allowed unless your required logic needs a selection)
+- Ensure any dependent/calculated fields are satisfied by the chosen inputs
+
+B) Personal Data (required)
+- firstName, lastName (letters/spaces only)
+- documentType and documentId (valid)
+- countryOfOrigin (valid selection)
+- birthDate (valid date)
+- homeAddress1
+- state, city, zipCode (zip numeric)
+- contact1Type and contact1Number (numeric)
+- Ensure no required field is left empty
+
+C) Business Data (required)
+- businessName
+- businessType (if “Other”, fill otherBusinessType)
+- businessSector
+- openingMonth and openingYear (4-digit)
+- businessAddress1
+- state, city, zip
+- contact1Type and businessContact1
+- multipleBusinesses: can be false to keep it simple
+
+D) Financials (P&L) required inputs
+- Fill all required P&L inputs according to the current implementation:
+  - earningsMonthly
+  - monthlySales1
+  - operationalCostsMonthlyTotal
+  - personalExpensesMonthlyTotal
+- If your completion logic also treats additional calculated fields as required, ensure they are computed and present.
+
+4) Use random-but-realistic values
+- Generate different names for members 2 and 3 (do not overwrite Luci Machado for the leader).
+- Use realistic addresses (can be mock), realistic dates, numeric values that look plausible.
+- Ensure all validations pass (no out-of-range, no invalid date rules, no empty required fields).
+
+5) Where to implement this auto-fill
+- Add a development-only helper in the app (do not expose in production UI):
+  Option A (preferred): Add a temporary “Dev: Auto-fill Luci Machado” button visible only in development mode (e.g., process.env.NODE_ENV !== "production") on either:
+  - /ongoing row actions for Luci Machado, OR
+  - Product Configuration header for that proposal
+  Clicking it runs the autofill and persists the proposal.
+  Option B: Run autofill automatically once on app load in development if the proposal exists and is not complete (guard so it runs only once).
+
+6) After autofill
+- Persist the updated proposal to the same storage used by Save & Exit so it survives refresh.
+- Navigate to /ongoing and verify the Luci Machado proposal shows 100% completion.
+- Verify inside Product Configuration:
+  - Each member shows 100% completion
+  - Each page shows 100% completion
+
+7) Acceptance criteria
+- Luci Machado proposal appears as 100% on the On Going list without manual typing.
+- All required fields across all required pages are filled for all members (at least 3).
+- No validation errors are triggered by the random data.
+- The autofill is clearly development-only and does not affect production behavior.
