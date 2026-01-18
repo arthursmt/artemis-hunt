@@ -1,0 +1,76 @@
+Create a fully completed mock proposal for the group whose leader is “Luci Machado” and update the completion logic so the On Going list uses the same real completion calculation as inside Product Configuration.
+
+PART 1 — Auto-fill a complete proposal for demo/testing
+
+1) Target proposal
+- Identify the proposal whose leader name is “Luci Machado”.
+- This proposal must end up 100% completed.
+
+2) Auto-fill behavior
+- Programmatically populate ALL mandatory fields for ALL clients (members) in this proposal.
+- The group must have AT LEAST 3 clients.
+- You may populate 4 or 5 clients if helpful, but minimum is 3.
+
+3) Data to populate (high-level rules)
+For EACH client in the group, fill all mandatory fields across:
+- Loan Details
+- Personal Data
+- Business Data
+- Financials (P&L)
+
+Use realistic but mock data:
+- Valid names, documents, addresses, dates, amounts.
+- Loan amounts within allowed range.
+- Dates respecting business rules.
+- Financial numbers consistent enough to pass validations.
+- Do NOT leave any mandatory field empty.
+
+4) Result of Part 1
+- Inside Product Configuration, all page-level completion indicators must show 100%.
+- Each client-level completion indicator must show 100%.
+- The proposal must be considered complete by the system.
+
+PART 2 — Fix On Going completion calculation (remove mock logic)
+
+5) Replace mock progress bar logic on On Going page
+- The completion percentage shown in the On Going proposals list must NOT be mocked.
+- It must use the same real completion logic used in Product Configuration.
+
+6) Correct completion formula for On Going proposals
+- Completion is calculated at PROPOSAL level.
+- Denominator:
+  - Sum of ALL mandatory fields across ALL form pages (Loan Details, Personal Data, Business Data, Financials)
+  - Multiplied by the number of clients considered for the proposal.
+  - IMPORTANT RULE:
+    - The minimum number of clients for the denominator is ALWAYS 3.
+    - If the proposal has 1 or 2 clients, calculate the denominator as if it had 3 clients, with missing clients counted as 0 fields filled.
+    - If the proposal has 3 clients, denominator = mandatory fields × 3.
+    - If the proposal has 4 or 5 clients, denominator = mandatory fields × actual number of clients.
+- Numerator:
+  - Total number of mandatory fields actually filled across ALL clients currently in the proposal.
+
+7) Dynamic behavior when clients are added
+- If a proposal initially has 3 clients and later gains a 4th or 5th client:
+  - The denominator must automatically increase.
+  - The completion percentage must be recalculated immediately.
+  - Newly added clients start contributing 0 filled mandatory fields until the user fills them.
+
+8) Sorting and display
+- On Going proposals list must display the recalculated real completion percentage.
+- For the Luci Machado proposal, the completion shown must be exactly 100%.
+- Other proposals must reflect their real progress according to the same logic.
+
+9) Architecture requirement
+- Implement a single reusable function, e.g.:
+  - getProposalCompletion(proposal)
+- This function must be used both:
+  - Inside Product Configuration (per proposal / per client logic)
+  - On the On Going proposals list
+- Do NOT duplicate or hardcode completion percentages in the UI.
+
+10) Acceptance criteria
+- Luci Machado proposal is fully auto-filled and shows 100% everywhere.
+- On Going page no longer uses mock progress.
+- Completion percentage dynamically reacts to adding/removing clients.
+- Minimum denominator always assumes 3 clients.
+- Behavior is consistent across all screens.

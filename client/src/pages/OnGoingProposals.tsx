@@ -7,60 +7,15 @@ import { ArrowLeft, Play, Calendar, Trash2, Eye } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { format } from "date-fns";
 import { Progress } from "@/components/ui/progress";
+import { getProposalCompletionWithMinClients } from "@/lib/completionHelpers";
 
-const getProposalCompletion = (proposal: ProposalWithData): number => {
-  let score = 0;
+const getProposalCompletionPercent = (proposal: ProposalWithData): number => {
   const data = proposal.data || {};
-  const group = data.group || { members: [] };
-
-  // A) Prospecting / group basics (25%)
-  const leader = group.members.find((m: any) => m.id === group.leaderId) || group.members[0];
-  if (leader && leader.firstName && leader.lastName) score += 10;
-  if (proposal.totalAmount > 0) score += 10;
-  if (group.members.length > 0) score += 5;
-
-  // B) Validation step done (25%)
-  if (data.validationCompleted) {
-    score += 25;
-  } else if (data.creditValidation) {
-    score += 15;
-  }
-
-  // C) Product Config - Loan Details (25%)
-  // D) Product Config - Personal Data (25%)
-  if (group.members.length > 0) {
-    let loanScoreTotal = 0;
-    let personalScoreTotal = 0;
-
-    group.members.forEach((member: any) => {
-      const loanDetails = data.loanDetailsByMember?.[member.id];
-      if (loanDetails) {
-        let memberLoanScore = 0;
-        if (loanDetails.installments) memberLoanScore += 5;
-        if (loanDetails.firstPaymentDate) memberLoanScore += 5;
-        if (loanDetails.loanType) memberLoanScore += 5;
-        if (loanDetails.loanGoal) memberLoanScore += 5;
-        if (loanDetails.borrowersInsurance !== undefined) memberLoanScore += 5;
-        loanScoreTotal += memberLoanScore;
-      }
-
-      let memberPersonalScore = 0;
-      const personalFields = [
-        'firstName', 'lastName', 'documentType', 'documentNumber',
-        'countryOfOrigin', 'birthDate', 'homeAddress1', 'state',
-        'city', 'zipCode', 'contact1Type', 'contact1Number'
-      ];
-      personalFields.forEach(field => {
-        if (member[field]) memberPersonalScore += (25 / personalFields.length);
-      });
-      personalScoreTotal += memberPersonalScore;
-    });
-
-    score += (loanScoreTotal / group.members.length);
-    score += (personalScoreTotal / group.members.length);
-  }
-
-  return Math.min(100, Math.round(score));
+  const group = data.group || { members: [], leaderId: 0, groupId: "" };
+  const loanDetailsByMember = data.loanDetailsByMember || {};
+  
+  const result = getProposalCompletionWithMinClients(group, loanDetailsByMember);
+  return result.percentage;
 };
 
 export default function OnGoingProposals() {
@@ -69,7 +24,7 @@ export default function OnGoingProposals() {
   
   const ongoing = proposals
     .filter(p => p.status === 'on_going')
-    .map(p => ({ ...p, completion: getProposalCompletion(p) }))
+    .map(p => ({ ...p, completion: getProposalCompletionPercent(p) }))
     .sort((a, b) => {
       if (b.completion !== a.completion) {
         return b.completion - a.completion;

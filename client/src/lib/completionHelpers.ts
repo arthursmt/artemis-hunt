@@ -172,18 +172,47 @@ export function getMemberCompletion(
   };
 }
 
+export function getTotalMandatoryFieldsPerMember(): number {
+  return (
+    MANDATORY_FIELDS.loan.length +
+    MANDATORY_FIELDS.personal.length +
+    MANDATORY_FIELDS.business.length +
+    MANDATORY_FIELDS.financials.length
+  );
+}
+
+export function getProposalCompletionWithMinClients(
+  group: Group,
+  loanDetailsByMember: Record<number, LoanDetails>
+): CompletionResult {
+  const fieldsPerMember = getTotalMandatoryFieldsPerMember();
+  const actualMemberCount = group.members.length;
+  const denominatorMemberCount = Math.max(3, actualMemberCount);
+  
+  let totalFilled = 0;
+
+  for (const member of group.members) {
+    const completion = getMemberCompletion(member, loanDetailsByMember[member.id]);
+    totalFilled += completion.filled;
+  }
+
+  const totalFields = fieldsPerMember * denominatorMemberCount;
+
+  return {
+    filled: totalFilled,
+    total: totalFields,
+    percentage: totalFields > 0 ? Math.round((totalFilled / totalFields) * 100) : 0
+  };
+}
+
 export function isProposalComplete(
   group: Group,
   loanDetailsByMember: Record<number, LoanDetails>
 ): boolean {
   if (group.members.length < 3) return false;
 
-  for (const member of group.members) {
-    const completion = getMemberCompletion(member, loanDetailsByMember[member.id]);
-    if (completion.percentage < 100) return false;
-  }
-
-  return true;
+  const completion = getProposalCompletionWithMinClients(group, loanDetailsByMember);
+  return completion.percentage === 100;
 }
 
 export function getProposalCompletion(
