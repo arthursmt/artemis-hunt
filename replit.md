@@ -7,6 +7,10 @@ Artemis Hunting MVP is a commercial application for microfinance field agents (l
 The application follows a full-stack architecture with a React frontend and Express.js backend, using PostgreSQL for data persistence. Currently, the frontend uses mock data for development purposes while the backend infrastructure is in place.
 
 ## Recent Changes
+- Added comprehensive completion tracking system with member and page-level indicators (Jan 18, 2026)
+- Redesigned "Next Step" button behavior: now submits proposal to Under Evaluation when all conditions met (Jan 18, 2026)
+- Created `completionHelpers.ts` with mandatory field definitions and reusable completion calculation functions (Jan 18, 2026)
+- Added CompletionRing component for visual progress indicators on member and section tabs (Jan 18, 2026)
 - Fixed personal data identity bug: each member now has stable, independent data tracking (Jan 18, 2026)
 - Implemented "Change Leader" functionality with automatic member reordering (Jan 18, 2026)
 - Restored horizontal workflow-style pipeline layout on Home page (Jan 18, 2026)
