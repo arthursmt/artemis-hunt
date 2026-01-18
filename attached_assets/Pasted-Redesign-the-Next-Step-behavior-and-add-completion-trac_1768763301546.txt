@@ -1,0 +1,83 @@
+Redesign the “Next Step” behavior and add completion tracking across the entire Product Configuration workflow.
+
+1) Change “Next Step” button behavior
+- The “Next Step” button must NOT navigate to Home.
+- “Back to Home” already covers that action.
+- “Next Step” must advance the workflow to the next stage: submit the proposal to the approval flow (Under Evaluation).
+- On click (when enabled), update proposal status from “On Going” to “Under Evaluation” and navigate to the appropriate confirmation or next screen in the workflow.
+
+2) Enable/disable rules for “Next Step”
+The “Next Step” button must be DISABLED by default and only enabled when ALL conditions below are true:
+- The proposal has AT LEAST 3 clients (members).
+- ALL mandatory fields of ALL required form pages are completed for ALL clients in the proposal.
+- Mandatory pages include:
+  - Loan Details
+  - Personal Data
+  - Business Data
+  - Financials (P&L)
+- If any mandatory field is missing for any client, the button remains disabled.
+
+3) Mandatory field validation on navigation
+- Mandatory fields must be validated not only on submit, but also when:
+  - The user leaves a form page (switches tabs), AND
+  - The user returns to a form page.
+- When returning to a page, any mandatory field not filled must:
+  - Be visually marked as incomplete
+  - Show a clear inline message (e.g., “Required field”)
+- Do not wait for “Next Step” click to show missing fields.
+
+4) Page-level completion indicator (per form page)
+- Each form page (Loan Details, Personal Data, Business Data, Financials) must show a completion indicator.
+- The indicator represents:
+  - Denominator: total number of mandatory fields on that page.
+  - Numerator: number of mandatory fields on that page that are filled.
+- Display as a percentage (e.g., “Personal Data 40% complete”).
+- Place the indicator near the page/tab title (e.g., small progress ring, bar, or badge).
+- Update the indicator live as fields are filled.
+
+5) Client-level completion indicator (per member)
+- Next to each CLIENT name (member tab), display an overall completion indicator.
+- Calculation:
+  - Denominator: total number of mandatory fields across ALL pages for that client.
+  - Numerator: total number of mandatory fields filled across ALL pages for that client.
+- Example:
+  - Personal Data: 10 required
+  - Loan Details: 7 required
+  - Business Data: 13 required
+  - Financials: 10 required
+  - Total = 40 required fields
+  - If client filled 4 fields in Personal Data only:
+    - Personal Data page indicator = 40%
+    - Other pages = 0%
+    - Client overall indicator = 10%
+- Update client indicator live as fields are filled.
+
+6) Visual design guidance (you may propose a creative solution)
+- Completion indicators must be compact and readable on tablet.
+- Acceptable patterns:
+  - Circular progress ring with percentage inside
+  - Thin progress bar + percentage label
+  - Badge-style percentage chip
+- Page-level indicators should be subtle.
+- Client-level indicators should be more visible but not overpower the name.
+- Use existing app color palette (primary blue + neutral grays).
+- Avoid red/yellow unless indicating errors.
+
+7) Data & architecture requirements
+- Define a single source of truth for:
+  - Mandatory fields per page
+  - Mandatory fields per client
+- Implement reusable helper functions:
+  - getPageCompletion(memberId, pageType)
+  - getMemberCompletion(memberId)
+  - isProposalComplete(proposal)
+- Do NOT hardcode percentages in the UI.
+- Completion must be derived from actual proposal data in the store.
+
+8) Acceptance criteria
+- “Next Step” only enables when proposal has ≥3 clients and all mandatory fields are filled for all clients.
+- Switching pages shows missing required fields immediately.
+- Each page shows its own completion percentage.
+- Each client tab shows an overall completion percentage.
+- Submitting via “Next Step” moves proposal into approval flow (Under Evaluation).
+- No regression to Save & Exit behavior.
