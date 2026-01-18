@@ -1,0 +1,41 @@
+Adjust the Home “Pipeline Overview” workflow cards so they align with the KPI dashboard cards above and fit on screen without horizontal dragging. The workflow cards must be smaller (as they were before) and show all stages side-by-side in one row on tablet width.
+
+1) Target area
+- Home/Dashboard page, section titled “Pipeline Overview” where the workflow cards (On Going, Under Eval, Completed, Renewals, Collections) are rendered.
+
+2) Layout requirement
+- The workflow cards must be in ONE row (no wrapping), aligned to the same left/right gutters as the KPI cards.
+- There must be NO horizontal scrolling/dragging for normal tablet width (Samsung Active 5).
+- Cards must be smaller than current and consistent width.
+
+3) Implement as a grid, not a horizontal scroll
+- Replace the current pipeline wrapper (it currently uses flex + overflow-x or min-width cards) with a responsive grid:
+  - On tablet/desktop: grid with 5 columns so all 5 workflow cards fit in one line.
+  - If 5 columns is too tight, allow 4 columns with the 5th on the next line ONLY as a last resort; primary goal is all on one row.
+- Use gap consistent with KPI row (same spacing).
+
+4) Card sizing
+- Each workflow card should have:
+  - Reduced padding (smaller than current)
+  - Fixed consistent height (match visual rhythm with KPI cards, but shorter than KPI cards)
+  - Smaller icon container and smaller count number
+  - Keep the internal hierarchy: icon, title, “View details”, count.
+- Remove any min-width forcing large cards.
+
+5) Alignment with KPI cards
+- Ensure the pipeline section container uses the same max-width and horizontal padding as the KPI section above.
+- If the KPI cards are inside a container like “max-w-[…] mx-auto px-…”, reuse the same container classes for Pipeline Overview.
+
+6) Concrete class changes (use Tailwind)
+- Pipeline wrapper should become something like:
+  - className="grid grid-cols-5 gap-4"
+- Each pipeline card should become smaller, e.g.:
+  - className includes "p-4" (or p-5 -> p-4), and ensure it can shrink within grid.
+- Ensure text sizes are slightly reduced if needed:
+  - title from text-2xl -> text-xl (or similar) only if necessary to prevent overflow.
+
+7) Acceptance criteria
+- On the Home screen, the KPI row and the Pipeline Overview row are visually aligned (same gutters).
+- The five workflow cards are visible without horizontal scrolling.
+- Cards look smaller and consistent, like before the layout change.
+- No regressions to click behavior (“View details” still works).

@@ -1,0 +1,59 @@
+Update the On Going Proposals screen to remove the redundant “Status” column and replace it with a “Completion” indicator (percentage). Sort proposals by completion from most complete to least complete. Reorder table columns and improve Actions column alignment.
+
+1) Target screen / file
+- Update the screen for route /ongoing (On Going Proposals). Find the table that currently shows columns: Client Name, Amount, Date Created, Status, Actions.
+
+2) Remove redundant Status
+- Remove the “Status” column entirely (header and cells). This screen is already filtered to On Going proposals, so status is redundant.
+
+3) Add Completion percentage column (2nd column)
+- Add a new column called “Completion” as the SECOND column (right after Client Name).
+- Completion cell should show:
+  - A compact progress bar (thin, tablet-friendly) AND a percentage label (e.g., “72%”).
+  - If you already have a Progress component, reuse it. Otherwise implement a simple div-based bar.
+- Completion must be computed per proposal based on how much of the proposal data is filled.
+
+4) Completion calculation (MVP, deterministic)
+- Implement a getProposalCompletion(proposal) function that returns an integer 0–100.
+- Use a weighted checklist based on the proposal store structure. Do NOT guess randomly; use existing data fields.
+- Minimal recommended checklist (adjust to actual available fields in the proposal object):
+  A) Prospecting / group basics (25%)
+    - leader firstName and lastName present
+    - loanAmount present and within valid range
+    - at least 1 member exists
+  B) Validation step done (25%)
+    - proposal has validation results for each member OR a flag that validation completed
+  C) Product Config - Loan Details (25%)
+    - for each member: loanDetails has required fields (installments, firstPaymentDate, loanType, loanGoal (and otherGoal if needed), insurance selection)
+  D) Product Config - Personal Data (25%)
+    - for each member: required personal fields present (firstName, lastName, documentType, documentId, countryOfOrigin, birthDate, address1, state, city, zip, contact1Type, contact1Number)
+- For group proposals: compute per-member completion for C and D and average across members.
+- If some modules/fields do not exist yet in the store, score that module as 0, but keep the function stable and based on what exists.
+
+5) Sorting
+- Sort proposals descending by completion percentage (highest first).
+- If two proposals have the same completion, secondary sort by most recently created (newest first).
+
+6) Column order changes (final table columns)
+- Columns must be in this exact order:
+  1. Client Name
+  2. Completion
+  3. Amount
+  4. Actions
+  5. Created Date (last column)
+- Rename “Date Created” to a grammatically correct label:
+  - Use “Created Date” (simple and correct) OR “Created On”.
+  - Do NOT use “Begin Date” (ambiguous).
+- Ensure the date value formatting stays the same as current.
+
+7) Actions column alignment
+- Center-align the Actions header and all cells in the Actions column.
+- The buttons/links inside Actions must be visually centered as a group within the column.
+- Keep existing actions (Keep filling, View details, Delete) and their behavior unchanged.
+
+8) Acceptance checks
+- No “Status” column exists.
+- Completion column appears as second column with progress + %.
+- Proposals are ordered from highest completion to lowest.
+- Column order matches the requirement and Created Date is the last column.
+- Actions column header and content are centered.

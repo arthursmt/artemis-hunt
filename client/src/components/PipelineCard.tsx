@@ -40,22 +40,22 @@ export function PipelineCard({ title, count, href, color, icon, delay = 0 }: Pip
             {hasActionDot && (
               <div className="absolute top-4 left-4 w-2 h-2 bg-amber-500 rounded-full z-10" />
             )}
-            <CardContent className="p-6">
-              <div className="flex justify-between items-start mb-4">
-                <div className="p-3 rounded-xl bg-white/60 backdrop-blur-sm shadow-sm">
+            <CardContent className="p-4">
+              <div className="flex justify-between items-start mb-3">
+                <div className="p-2 rounded-lg bg-white/60 backdrop-blur-sm shadow-sm">
                   {icon}
                 </div>
-                <div className="text-4xl font-display font-bold opacity-90 tracking-tight">
+                <div className="text-2xl font-display font-bold opacity-90 tracking-tight">
                   {count}
                 </div>
               </div>
-              <h3 className="text-lg font-bold font-display">{title}</h3>
+              <h3 className="text-base font-bold font-display">{title}</h3>
             </CardContent>
             
-            <CardFooter className="p-6 pt-0 mt-auto">
-              <div className="w-full flex items-center justify-between text-sm font-medium opacity-70 group-hover:opacity-100 transition-opacity">
+            <CardFooter className="p-4 pt-0 mt-auto">
+              <div className="w-full flex items-center justify-between text-xs font-medium opacity-70 group-hover:opacity-100 transition-opacity">
                 <span>View details</span>
-                <ChevronRight className="w-4 h-4 transform group-hover:translate-x-1 transition-transform" />
+                <ChevronRight className="w-3.5 h-3.5 transform group-hover:translate-x-1 transition-transform" />
               </div>
             </CardFooter>
           </Card>
