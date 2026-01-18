@@ -1,0 +1,50 @@
+Fix a navigation/selection bug in Product Configuration: when the user is on Member 3 (tab #3) Personal Data and starts typing (e.g., First Name), the tab label updates correctly for Member 3, but the app suddenly switches the active member back to Member 1 (leader) and shows Member 1 form. The active member must NEVER change while typing.
+
+1) Reproduce
+- Open /product-config/:proposalId
+- Click Member 3 tab (tab index 3).
+- Go to Personal Data.
+- Click inside First Name and type 1–2 characters.
+- Observe: UI jumps to Member 1 form (bug).
+
+2) Root cause to eliminate
+- There is likely an effect or state update that resets activeMemberId (or selectedMemberIndex) when members array changes (e.g., name change updates members, causing re-render and selection reset).
+- Another common cause: tabs are controlled by “defaultValue” instead of “value”, or onValueChange is firing unexpectedly during re-render.
+- Another cause: active member is derived from members[0] (leader) in a useEffect when proposal updates.
+
+3) Required behavior
+- The currently selected member tab must remain selected during any field edits.
+- Editing a member name must not change activeMemberId.
+- The only times activeMemberId may change are:
+  A) user clicks a different member tab
+  B) user confirms “Change leader” (then activeMemberId becomes the new leader id)
+  C) initial page load when activeMemberId is empty (set it once)
+
+4) Implementation requirements
+- Ensure member selection is controlled state:
+  - Tabs component MUST use a controlled value bound to activeMemberId (or a stable tabValue), not defaultValue.
+  - Example: <Tabs value={activeMemberId} onValueChange={setActiveMemberId}> ...
+- Ensure each TabTrigger value equals the member.id (string), not “1”, “2”, or index-based values.
+- Ensure each TabTrigger uses key={member.id}.
+- Ensure activeMemberId is NOT reset in any useEffect that depends on members or proposal changes.
+  - If you have something like:
+    useEffect(() => setActiveMemberId(members[0].id), [members])
+    remove it or guard it so it runs only once on initial load when activeMemberId is empty.
+  - Allowed pattern:
+    useEffect(() => {
+      if (!activeMemberId && members.length) setActiveMemberId(members[0].id)
+    }, [activeMemberId, members.length])
+- If “leader must always be first” logic causes array reorder on every edit, stop that:
+  - Do NOT reorder members on name edits.
+  - Only reorder members when “Change leader” is confirmed.
+
+5) Preserve selected tab after member updates
+- If you currently store activeMemberIndex, replace it with activeMemberId.
+- When members update (due to typing), keep activeMemberId unchanged.
+- If the member being edited is removed (not the case here), only then fallback to leader.
+
+6) Acceptance tests
+- While typing in any field for Member 2–5, the active member tab never changes.
+- Member tab labels update live for the member being edited without changing selection.
+- Switching tabs only happens from explicit user click or confirmed Change leader.
+- Save & Exit still persists all member data correctly.

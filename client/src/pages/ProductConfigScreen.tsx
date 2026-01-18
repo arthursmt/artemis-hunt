@@ -137,8 +137,12 @@ export default function ProductConfigScreen() {
     if (proposal) {
       const loadedGroup = proposal.data.group;
       setGroup(loadedGroup);
-      const initialActiveId = loadedGroup.leaderId || loadedGroup.members[0]?.id;
-      setActiveMemberId(initialActiveId);
+      
+      // Only set activeMemberId if it hasn't been set yet
+      setActiveMemberId(prev => {
+        if (prev !== null) return prev;
+        return loadedGroup.leaderId || loadedGroup.members[0]?.id || null;
+      });
       
       if (proposal.data.loanDetailsByMember) {
         setLoanDetailsByMember(proposal.data.loanDetailsByMember);
