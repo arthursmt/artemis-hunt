@@ -499,6 +499,79 @@ function createCompleteLuciMachadoProposal(): ProposalWithData {
   };
 }
 
+export interface EvidenceItem {
+  uri: string;
+  capturedAt: string;
+}
+
+export interface MemberEvidence {
+  clientSelfie: EvidenceItem | null;
+  idFront: EvidenceItem | null;
+  idBack: EvidenceItem | null;
+  residenceProofOfAddress: EvidenceItem | null;
+  businessProofOfAddress: EvidenceItem | null;
+  businessPhoto: EvidenceItem | null;
+  inventoryPhoto: EvidenceItem | null;
+  renovationPhoto: EvidenceItem | null;
+  newMachineryPhoto: EvidenceItem | null;
+  utilityBillElectricity: EvidenceItem | null;
+  utilityBillWater: EvidenceItem | null;
+}
+
+export type EvidenceKey = keyof MemberEvidence;
+
+export const EVIDENCE_METADATA: Record<EvidenceKey, {
+  label: string;
+  category: 'identity' | 'business' | 'conditional';
+  required: boolean;
+  conditionalOn?: { loanGoal?: string[] };
+}> = {
+  clientSelfie: { label: 'Client Photo', category: 'identity', required: true },
+  idFront: { label: 'ID Front', category: 'identity', required: true },
+  idBack: { label: 'ID Back', category: 'identity', required: true },
+  residenceProofOfAddress: { label: 'Residence Proof', category: 'identity', required: false },
+  businessProofOfAddress: { label: 'Business Proof of Address', category: 'business', required: true },
+  businessPhoto: { label: 'Business Photo', category: 'business', required: true },
+  inventoryPhoto: { label: 'Inventory Photo', category: 'business', required: false },
+  utilityBillElectricity: { label: 'Electricity Bill', category: 'business', required: false },
+  utilityBillWater: { label: 'Water Bill', category: 'business', required: false },
+  renovationPhoto: { label: 'Renovation Photo', category: 'conditional', required: false, conditionalOn: { loanGoal: ['Investment'] } },
+  newMachineryPhoto: { label: 'New Machinery Photo', category: 'conditional', required: false, conditionalOn: { loanGoal: ['Equipment purchase'] } }
+};
+
+export function getRequiredEvidenceKeys(loanGoal?: string): EvidenceKey[] {
+  const required: EvidenceKey[] = [];
+  
+  for (const [key, meta] of Object.entries(EVIDENCE_METADATA)) {
+    const evidenceKey = key as EvidenceKey;
+    if (meta.required) {
+      required.push(evidenceKey);
+    } else if (meta.conditionalOn?.loanGoal && loanGoal) {
+      if (meta.conditionalOn.loanGoal.includes(loanGoal)) {
+        required.push(evidenceKey);
+      }
+    }
+  }
+  
+  return required;
+}
+
+export function getEmptyEvidence(): MemberEvidence {
+  return {
+    clientSelfie: null,
+    idFront: null,
+    idBack: null,
+    residenceProofOfAddress: null,
+    businessProofOfAddress: null,
+    businessPhoto: null,
+    inventoryPhoto: null,
+    renovationPhoto: null,
+    newMachineryPhoto: null,
+    utilityBillElectricity: null,
+    utilityBillWater: null
+  };
+}
+
 export interface Member {
   id: number;
   firstName: string;
@@ -524,6 +597,7 @@ export interface Member {
   referenceNumber1?: string;
   referenceName2?: string;
   referenceNumber2?: string;
+  evidence?: MemberEvidence;
   businessData?: {
     businessName: string;
     businessType: string;

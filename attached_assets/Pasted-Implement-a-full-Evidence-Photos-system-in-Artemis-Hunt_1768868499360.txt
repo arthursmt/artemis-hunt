@@ -1,0 +1,145 @@
+Implement a full “Evidence & Photos” system in Artemis Hunting MVP (Product Configuration) with BOTH contextual capture (inside each form page) AND a centralized Evidence Hub accessible anytime. Photos are per-client (per member) and must count as required fields for completion and for enabling Next Step.
+
+1) Core requirements
+- Photos are stored per member (client). Each member has their own evidence set.
+- Some photos are mandatory, some optional, some conditional based on Loan Details (loan goal/type).
+- Evidence must affect completion percentages:
+  - Member completion
+  - Page completion
+  - Proposal completion
+  - Next Step enablement
+
+2) Evidence types (per member)
+Create an evidence schema with these items (use stable keys):
+A) Mandatory for every member
+- clientSelfie (photo of client)
+- idFront (document front)
+- idBack (document back)
+- businessProofOfAddress (proof of address for business) REQUIRED (can be same file as residence proof, but still required as a field)
+- businessPhoto (photo of the establishment) REQUIRED
+
+B) Optional (not required for completion)
+- residenceProofOfAddress (proof of residence) OPTIONAL by default
+- inventoryPhoto (photo of inventory) OPTIONAL
+- utilityBillElectricity (electric bill) OPTIONAL
+- utilityBillWater (water bill) OPTIONAL
+
+C) Conditional (required only for certain loan goal/type)
+- renovationPhoto REQUIRED only when loan purpose corresponds to renovation (check existing Loan Details “Loan goal” / “Loan type” options and match the one used for renovation/investment)
+- newMachineryPhoto REQUIRED only when loan purpose corresponds to buying machinery/equipment (match the relevant option in Loan Details)
+If the loan goal/type is not renovation, renovationPhoto must be optional/hidden and must NOT block completion.
+If the loan goal/type is not machinery/equipment, newMachineryPhoto must be optional/hidden and must NOT block completion.
+
+3) Data model & persistence
+- Extend Member model to include:
+  member.evidence = {
+    clientSelfie: { uri, capturedAt } | null,
+    idFront: { uri, capturedAt } | null,
+    idBack: { uri, capturedAt } | null,
+    residenceProofOfAddress: { uri, capturedAt } | null,
+    businessProofOfAddress: { uri, capturedAt } | null,
+    businessPhoto: { uri, capturedAt } | null,
+    inventoryPhoto: { uri, capturedAt } | null,
+    renovationPhoto: { uri, capturedAt } | null,
+    newMachineryPhoto: { uri, capturedAt } | null,
+    utilityBillElectricity: { uri, capturedAt } | null,
+    utilityBillWater: { uri, capturedAt } | null
+  }
+- Persist evidence in the same proposal store persistence used by Save & Exit so it survives refresh and appears on On Going.
+
+4) Central Evidence Hub (global, per proposal)
+- Add a button in the Product Configuration header area (top dark header) OR near the member tabs:
+  Label: “Evidence & Photos”
+  Show a small badge count of missing required evidence for the active member and/or whole proposal.
+- Clicking opens a modal or full-screen panel (tablet-friendly) with:
+  - Member selector (tabs or dropdown) to switch between members
+  - For the selected member, show a checklist grouped by sections:
+    1) Client identity
+       - Client photo (required)
+       - ID front (required)
+       - ID back (required)
+       - Residence proof (optional)
+    2) Business existence
+       - Business photo (required)
+       - Business proof of address (required)
+       - Inventory photo (optional)
+       - Electricity bill (optional)
+       - Water bill (optional)
+    3) Conditional photos (only show when required by loan goal/type)
+       - Renovation photo (conditional)
+       - New machinery photo (conditional)
+  - Each item shows:
+    - Status pill: Missing / Completed / Optional
+    - Thumbnail preview if present
+    - Buttons: “Capture/Upload” if missing, “Retake” if present, “View” if present
+- IMPORTANT: Selecting an evidence item should open the capture/upload flow and store the image for that member and that evidence key.
+
+5) Contextual capture inside form pages (primary capture)
+Add small “Required photos” blocks inside relevant pages:
+A) Personal Data page: show a compact card titled “Client Photos”
+- Client photo (required)
+- ID front (required)
+- ID back (required)
+- Residence proof (optional)
+Each item has a small status indicator and a Capture/Retake button.
+This must update member.evidence immediately.
+
+B) Business Data page: show a compact card titled “Business Photos”
+- Business photo (required)
+- Business proof of address (required)
+- Inventory photo (optional)
+- Electricity bill (optional)
+- Water bill (optional)
+Also include the conditional photos block here (or in Loan Details):
+- Renovation photo (conditional)
+- New machinery photo (conditional)
+Only display these when the loan goal/type implies they are required.
+
+C) Loan Details page: if easier, you may place the conditional photo prompts here because loan goal is configured here.
+- When user selects the loan goal/type that triggers conditional photos, show an inline prompt telling them which extra photo will be required and provide a shortcut button “Go to Evidence”.
+
+6) Capture/upload behavior (web MVP)
+- Since this is a web React app, implement file input upload as the MVP capture mechanism:
+  - “Capture/Upload” opens file picker
+  - Accept images only
+  - Create a preview thumbnail
+  - Store as data URL or stored file reference (use the existing storage approach in the app; simplest is base64/dataURL in local storage for MVP)
+- Provide “Retake” which replaces the stored image.
+
+7) Required evidence rules for completion
+- Evidence items count as required fields for completion calculations and Next Step gating.
+- Required evidence per member includes:
+  - clientSelfie, idFront, idBack, businessProofOfAddress, businessPhoto
+  - plus renovationPhoto if renovation goal applies
+  - plus newMachineryPhoto if machinery/equipment goal applies
+- Optional evidence never blocks completion and does not count in required denominator.
+
+8) Completion calculations updates
+- Update the existing completion functions so that evidence required fields are included:
+  - Page completion:
+    - Personal Data page denominator includes required personal fields + required evidence items shown on that page
+    - Business Data page denominator includes required business fields + required evidence items shown on that page
+  - Member completion denominator includes all required fields across all pages + required evidence items (including conditional ones when applicable)
+  - Proposal completion denominator uses the member denominators (respect the “minimum 3 clients” rule already specified)
+- Ensure the completion shown on:
+  - Product Config member tabs
+  - Product Config page tabs
+  - On Going list
+  stays consistent with the same logic.
+
+9) Next Step gating
+- Next Step must remain disabled unless:
+  - Proposal has at least 3 members
+  - ALL required fields AND ALL required evidence for ALL members are completed
+- If disabled, show a helpful message:
+  - “Complete all required fields and photos for all members to submit.”
+  - Provide a “View missing items” link that opens the Evidence Hub filtered to missing required items.
+
+10) Acceptance criteria
+- Each member has independent evidence; capturing for Member 3 does not affect Member 1.
+- Evidence Hub shows accurate checklist statuses and thumbnails.
+- Contextual photo blocks appear on Personal Data and Business Data pages with correct required/optional items.
+- Conditional photos appear only when the loan goal/type requires them and then become required for completion.
+- Completion percentages update immediately when photos are added.
+- Luci Machado proposal can reach 100% only when required photos are provided for all members.
+- Save & Exit persists evidence and completion state; On Going shows correct percentage.
