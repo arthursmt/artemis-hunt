@@ -17,6 +17,7 @@ import { useToast } from "@/hooks/use-toast";
 import { ArrowLeft, FileText, Check, AlertCircle, Pen, Trash2, User, Calendar, DollarSign, Hash } from "lucide-react";
 import { useProposalStore, Member, LoanDetails, ContractSignature } from "@/lib/proposalStore";
 import { isProposalCompleteWithEvidence } from "@/lib/completionHelpers";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 import SignatureCanvas from "react-signature-canvas";
 import { cn } from "@/lib/utils";
 
@@ -195,7 +196,7 @@ export default function ContractScreen() {
             ...prev.data.group,
             members: prev.data.group.members.map(m => 
               m.id === memberId 
-                ? { ...m, signatures: { contractSignature: null } }
+                ? { ...m, signatures: { ...m.signatures, contractSignature: null } }
                 : m
             )
           }
@@ -236,7 +237,7 @@ export default function ContractScreen() {
             ...prev.data.group,
             members: prev.data.group.members.map(m => 
               m.id === member.id 
-                ? { ...m, signatures: { contractSignature: signature } }
+                ? { ...m, signatures: { ...m.signatures, contractSignature: signature } }
                 : m
             )
           }
@@ -265,26 +266,20 @@ export default function ContractScreen() {
     setIsSubmitting(true);
     
     try {
-      // Prepare the full payload
-      const payload = {
+      // Prepare the payload - flat structure matching schema
+      const submissionPayload = {
         proposalId,
-        submittedAt: new Date().toISOString(),
         payload: {
           ...proposal,
           status: "under_evaluation"
         }
       };
       
-      // Submit to backend
-      const response = await fetch("/api/proposals/submit", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload)
-      });
+      // Submit to backend using apiRequest
+      await apiRequest("POST", "/api/proposals/submit", submissionPayload);
       
-      if (!response.ok) {
-        throw new Error("Failed to submit proposal");
-      }
+      // Invalidate submissions cache
+      queryClient.invalidateQueries({ queryKey: ["/api/proposals/submissions"] });
       
       // Update local state
       updateProposal(proposalId, prev => ({

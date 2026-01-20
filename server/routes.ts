@@ -47,19 +47,27 @@ export async function registerRoutes(
   });
 
   // Proposal Submissions
+  const proposalSubmissionSchema = z.object({
+    proposalId: z.string().min(1, "Proposal ID is required"),
+    payload: z.record(z.unknown()).refine((val) => val !== null && typeof val === 'object', {
+      message: "Payload must be an object"
+    })
+  });
+
   app.post("/api/proposals/submit", async (req, res) => {
     try {
-      const { proposalId, payload } = req.body;
-      
-      if (!proposalId || !payload) {
-        return res.status(400).json({
-          message: "proposalId and payload are required"
-        });
-      }
+      const parsed = proposalSubmissionSchema.parse(req.body);
+      const { proposalId, payload } = parsed;
       
       const submission = await storage.submitProposal(proposalId, payload);
       res.status(201).json(submission);
     } catch (err: any) {
+      if (err instanceof z.ZodError) {
+        return res.status(400).json({
+          message: err.errors[0].message,
+          field: err.errors[0].path.join('.')
+        });
+      }
       if (err.code === "23505") {
         return res.status(409).json({
           message: "Proposal already submitted"
