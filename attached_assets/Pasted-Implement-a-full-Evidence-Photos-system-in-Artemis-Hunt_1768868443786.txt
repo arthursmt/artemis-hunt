@@ -1,0 +1,59 @@
+Implement a full “Evidence & Photos” system in Artemis Hunting MVP (Product Configuration) with BOTH contextual capture (inside each form page) AND a centralized Evidence Hub accessible anytime. Photos are per-client (per member) and must count as required fields for completion and for enabling Next Step.
+
+1) Core requirements
+- Photos are stored per member (client). Each member has their own evidence set.
+- Some photos are mandatory, some optional, some conditional based on Loan Details (loan goal/type).
+- Evidence must affect completion percentages:
+  - Member completion
+  - Page completion
+  - Proposal completion
+  - Next Step enablement
+
+2) Evidence types (per member)
+Create an evidence schema with these items (use stable keys):
+A) Mandatory for every member
+- clientSelfie (photo of client)
+- idFront (document front)
+- idBack (document back)
+- businessProofOfAddress (proof of address for business) REQUIRED (can be same file as residence proof, but still required as a field)
+- businessPhoto (photo of the establishment) REQUIRED
+
+B) Optional (not required for completion)
+- residenceProofOfAddress (proof of residence) OPTIONAL by default
+- inventoryPhoto (photo of inventory) OPTIONAL
+- utilityBillElectricity (electric bill) OPTIONAL
+- utilityBillWater (water bill) OPTIONAL
+
+C) Conditional (required only for certain loan goal/type)
+- renovationPhoto REQUIRED only when loan purpose corresponds to renovation (check existing Loan Details “Loan goal” / “Loan type” options and match the one used for renovation/investment)
+- newMachineryPhoto REQUIRED only when loan purpose corresponds to buying machinery/equipment (match the relevant option in Loan Details)
+If the loan goal/type is not renovation, renovationPhoto must be optional/hidden and must NOT block completion.
+If the loan goal/type is not machinery/equipment, newMachineryPhoto must be optional/hidden and must NOT block completion.
+
+3) Data model & persistence
+- Extend Member model to include:
+  member.evidence = {
+    clientSelfie: { uri, capturedAt } | null,
+    idFront: { uri, capturedAt } | null,
+    idBack: { uri, capturedAt } | null,
+    residenceProofOfAddress: { uri, capturedAt } | null,
+    businessProofOfAddress: { uri, capturedAt } | null,
+    businessPhoto: { uri, capturedAt } | null,
+    inventoryPhoto: { uri, capturedAt } | null,
+    renovationPhoto: { uri, capturedAt } | null,
+    newMachineryPhoto: { uri, capturedAt } | null,
+    utilityBillElectricity: { uri, capturedAt } | null,
+    utilityBillWater: { uri, capturedAt } | null
+  }
+- Persist evidence in the same proposal store persistence used by Save & Exit so it survives refresh and appears on On Going.
+
+4) Central Evidence Hub (global, per proposal)
+- Add a button in the Product Configuration header area (top dark header) OR near the member tabs:
+  Label: “Evidence & Photos”
+  Show a small badge count of missing required evidence for the active member and/or whole proposal.
+- Clicking opens a modal or full-screen panel (tablet-friendly) with:
+  - Member selector (tabs or dropdown) to switch between members
+  - For the selected member, show a checklist grouped by sections:
+    1) Client identity
+       - Client photo (required)
+       - ID front (required)
