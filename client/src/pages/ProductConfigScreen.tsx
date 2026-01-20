@@ -1,12 +1,15 @@
 import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Plus, X, Star, Save, Info, CheckCircle } from "lucide-react";
+import { ArrowLeft, Plus, X, Star, Save, Info, CheckCircle, Camera } from "lucide-react";
 import { Link, useLocation, useParams } from "wouter";
 import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import * as React from "react";
 import { useState, useEffect, useMemo } from "react";
-import { useProposalStore, Group, Member, LoanDetails } from "@/lib/proposalStore";
+import { useProposalStore, Group, Member, LoanDetails, EvidenceKey, MemberEvidence, getEmptyEvidence } from "@/lib/proposalStore";
+import { EvidenceHub } from "@/components/EvidenceHub";
+import { PersonalDataEvidence, BusinessDataEvidence } from "@/components/EvidenceCapture";
+import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -14,7 +17,13 @@ import {
   getPageCompletion,
   getMemberCompletion,
   isProposalComplete,
-  PageType
+  PageType,
+  getMemberCompletionWithEvidence,
+  isProposalCompleteWithEvidence,
+  getTotalMissingEvidenceCount,
+  getPersonalPageCompletionWithEvidence,
+  getBusinessPageCompletionWithEvidence,
+  getEvidenceCompletion
 } from "@/lib/completionHelpers";
 
 function CompletionRing({ percentage, size = 24, strokeWidth = 3 }: { percentage: number; size?: number; strokeWidth?: number }) {
@@ -135,6 +144,34 @@ export default function ProductConfigScreen() {
   const [loanDetailsByMember, setLoanDetailsByMember] = useState<Record<number, LoanDetails>>({});
   const [loanErrorsByMember, setLoanErrorsByMember] = useState<Record<number, Partial<Record<keyof LoanDetails, string>>>>({});
   const [memberErrors, setMemberErrors] = useState<Record<number, Record<string, string>>>({});
+  const [evidenceHubOpen, setEvidenceHubOpen] = useState(false);
+
+  const handleCaptureEvidence = (memberId: number, key: EvidenceKey, uri: string) => {
+    if (!group || !proposalId) return;
+    
+    const updatedMembers = group.members.map(m => {
+      if (m.id !== memberId) return m;
+      
+      const currentEvidence = m.evidence || getEmptyEvidence();
+      return {
+        ...m,
+        evidence: {
+          ...currentEvidence,
+          [key]: {
+            uri,
+            capturedAt: new Date().toISOString()
+          }
+        }
+      };
+    });
+    
+    const newGroup = { ...group, members: updatedMembers };
+    setGroup(newGroup);
+    updateProposal(proposalId, prev => ({
+      ...prev,
+      data: { ...prev.data, group: newGroup }
+    }));
+  };
 
   const handleFieldChange = (section: string, value: any) => {
     if (!group || activeMemberId === null) return;
@@ -502,7 +539,8 @@ export default function ProductConfigScreen() {
     setLocation("/");
   };
 
-  const canSubmitProposal = group ? isProposalComplete(group, loanDetailsByMember) : false;
+  const canSubmitProposal = group ? isProposalCompleteWithEvidence(group, loanDetailsByMember) : false;
+  const totalMissingEvidence = group ? getTotalMissingEvidenceCount(group, loanDetailsByMember) : 0;
 
   const handleNextStep = () => {
     if (!group || !proposalId) return;
@@ -588,6 +626,21 @@ export default function ProductConfigScreen() {
               <p className="text-[10px] uppercase text-slate-400 font-bold mb-1 tracking-widest">Base Rate</p>
               <p className="font-semibold text-sm">14% APR (fixed)</p>
             </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setEvidenceHubOpen(true)}
+              className="bg-white/10 border-white/20 text-white hover:bg-white/20 gap-2"
+              data-testid="btn-evidence-hub"
+            >
+              <Camera className="w-4 h-4" />
+              Evidence & Photos
+              {totalMissingEvidence > 0 && (
+                <Badge variant="destructive" className="ml-1 text-xs">
+                  {totalMissingEvidence}
+                </Badge>
+              )}
+            </Button>
             <Dialog>
               <DialogTrigger asChild>
                 <Button variant="ghost" size="sm" className="text-primary hover:text-primary/80 hover:bg-white/10 gap-2 h-auto py-1">
@@ -960,6 +1013,11 @@ export default function ProductConfigScreen() {
                 member={activeMember}
                 onChange={handlePersonalFieldChange}
               />
+              <PersonalDataEvidence
+                evidence={activeMember.evidence}
+                loanGoal={activeLoanDetails.loanGoal}
+                onCapture={(key, uri) => handleCaptureEvidence(activeMemberId!, key, uri)}
+              />
             </CardContent>
           </Card>
         )}
@@ -972,6 +1030,11 @@ export default function ProductConfigScreen() {
                 member={activeMember} 
                 onChange={handleFieldChange} 
                 errors={memberErrors[activeMemberId!] || {}} 
+              />
+              <BusinessDataEvidence
+                evidence={activeMember.evidence}
+                loanGoal={activeLoanDetails.loanGoal}
+                onCapture={(key, uri) => handleCaptureEvidence(activeMemberId!, key, uri)}
               />
             </CardContent>
           </Card>
@@ -1014,11 +1077,22 @@ export default function ProductConfigScreen() {
               )}
               data-testid="button-next-step"
             >
-              {canSubmitProposal ? "Submit for Evaluation" : `Next Step (${group?.members.length || 0}/3 members)`}
+              {canSubmitProposal ? "Submit for Evaluation" : totalMissingEvidence > 0 
+                ? `${totalMissingEvidence} photos missing` 
+                : `Next Step (${group?.members.length || 0}/3 members)`}
             </Button>
           </div>
         </div>
       </main>
+
+      <EvidenceHub
+        open={evidenceHubOpen}
+        onOpenChange={setEvidenceHubOpen}
+        members={group.members}
+        activeMemberId={activeMemberId || group.members[0]?.id}
+        loanDetailsByMember={loanDetailsByMember}
+        onCaptureEvidence={handleCaptureEvidence}
+      />
     </div>
   );
 }
