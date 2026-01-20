@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -35,6 +35,13 @@ export function EvidenceHub({
   const [viewingImage, setViewingImage] = useState<{ key: EvidenceKey; uri: string } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [currentUploadKey, setCurrentUploadKey] = useState<EvidenceKey | null>(null);
+
+  // Sync selectedMemberId with activeMemberId when dialog opens
+  useEffect(() => {
+    if (open) {
+      setSelectedMemberId(activeMemberId);
+    }
+  }, [open, activeMemberId]);
 
   const selectedMember = members.find(m => m.id === selectedMemberId) || members[0];
   const loanGoal = loanDetailsByMember[selectedMemberId]?.loanGoal;
