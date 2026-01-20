@@ -7,6 +7,11 @@ Artemis Hunting MVP is a commercial application for microfinance field agents (l
 The application follows a full-stack architecture with a React frontend and Express.js backend, using PostgreSQL for data persistence. Currently, the frontend uses mock data for development purposes while the backend infrastructure is in place.
 
 ## Recent Changes
+- Implemented Contract Signing and Submission flow with scroll-gated agreement, individual member signatures, and double confirmation (Jan 20, 2026)
+- Added `/contract/:id` route for contract reading and signature capture (Jan 20, 2026)
+- Created `proposalSubmissions` database table for storing submitted proposals (Jan 20, 2026)
+- Added backend endpoints: POST /api/proposals/submit, GET /api/proposals/submissions with Zod validation (Jan 20, 2026)
+- Changed "Submit for Evaluation" button to "Sign Contract" which navigates to contract screen when proposal is 100% complete (Jan 20, 2026)
 - Unified proposal completion logic using `getProposalCompletionWithMinClients()` with minimum 3 client denominator (Jan 18, 2026)
 - Added Luci Machado demo proposal auto-seeded with all mandatory fields filled (100% complete) (Jan 18, 2026)
 - On Going page now uses real completion calculation instead of mock logic (Jan 18, 2026)
@@ -46,8 +51,20 @@ Preferred communication style: Simple, everyday language.
 - **Core Entities**:
   - Proposals: Credit applications with statuses (on_going, under_evaluation, completed)
   - Contracts: Active loans with statuses (active, renewal_due, delinquent)
+  - ProposalSubmissions: Submitted proposals with full payload stored as JSON
 - **Mock Data**: `client/src/mock/data.ts` provides development data for frontend testing
 - **Database Migrations**: Managed via `drizzle-kit push` command
+
+### Contract Signing Flow
+1. When proposal is 100% complete, "Sign Contract" button appears on Product Config screen
+2. Navigates to `/contract/:id` screen with scrollable contract text
+3. User must scroll to bottom of contract to enable agreement checkbox
+4. After checking agreement, each member must sign on individual signature pads (react-signature-canvas)
+5. Signatures are saved with metadata (signer name, loan amount, date)
+6. Submit button enabled only when: contract read, agreement checked, all members signed
+7. Double confirmation modal before final submission
+8. Payload submitted to backend via POST /api/proposals/submit
+9. Redirects to Under Evaluation page on success
 
 ### Shared Code Pattern
 The `shared/` directory contains code used by both frontend and backend:
