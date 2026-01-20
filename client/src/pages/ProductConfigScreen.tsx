@@ -564,16 +564,9 @@ export default function ProductConfigScreen() {
     }
 
     persistLoanDetails();
-    updateProposal(proposalId, prev => ({
-      ...prev,
-      status: "under_evaluation"
-    }));
-
-    toast({
-      title: "Proposal Submitted",
-      description: "Your proposal has been submitted for evaluation.",
-    });
-    setLocation("/under-evaluation");
+    
+    // Navigate to Contract Signature screen instead of changing status
+    setLocation(`/contract/${proposalId}`);
   };
 
   if (!group) {
@@ -1077,7 +1070,7 @@ export default function ProductConfigScreen() {
               )}
               data-testid="button-next-step"
             >
-              {canSubmitProposal ? "Submit for Evaluation" : totalMissingEvidence > 0 
+              {canSubmitProposal ? "Sign Contract" : totalMissingEvidence > 0 
                 ? `${totalMissingEvidence} photos missing` 
                 : `Next Step (${group?.members.length || 0}/3 members)`}
             </Button>

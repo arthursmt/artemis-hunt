@@ -40,6 +40,22 @@ export const insertContractSchema = createInsertSchema(contracts).omit({
 export type Contract = typeof contracts.$inferSelect;
 export type InsertContract = z.infer<typeof insertContractSchema>;
 
+// === PROPOSAL SUBMISSIONS ===
+export const proposalSubmissions = pgTable("proposal_submissions", {
+  id: serial("id").primaryKey(),
+  proposalId: text("proposal_id").notNull().unique(),
+  submittedAt: timestamp("submitted_at").defaultNow(),
+  payload: text("payload").notNull(), // JSON stringified proposal data
+});
+
+export const insertProposalSubmissionSchema = createInsertSchema(proposalSubmissions).omit({
+  id: true,
+  submittedAt: true
+});
+
+export type ProposalSubmission = typeof proposalSubmissions.$inferSelect;
+export type InsertProposalSubmission = z.infer<typeof insertProposalSubmissionSchema>;
+
 // === TYPES ===
 export type ProposalStatus = 'on_going' | 'under_evaluation' | 'completed';
 export type ContractStatus = 'active' | 'renewal_due' | 'delinquent';

@@ -46,5 +46,63 @@ export async function registerRoutes(
     });
   });
 
+  // Proposal Submissions
+  app.post("/api/proposals/submit", async (req, res) => {
+    try {
+      const { proposalId, payload } = req.body;
+      
+      if (!proposalId || !payload) {
+        return res.status(400).json({
+          message: "proposalId and payload are required"
+        });
+      }
+      
+      const submission = await storage.submitProposal(proposalId, payload);
+      res.status(201).json(submission);
+    } catch (err: any) {
+      if (err.code === "23505") {
+        return res.status(409).json({
+          message: "Proposal already submitted"
+        });
+      }
+      console.error("Submission error:", err);
+      res.status(500).json({
+        message: "Failed to submit proposal"
+      });
+    }
+  });
+
+  app.get("/api/proposals/submissions", async (req, res) => {
+    try {
+      const submissions = await storage.getSubmissions();
+      res.json(submissions.map(s => ({
+        proposalId: s.proposalId,
+        submittedAt: s.submittedAt
+      })));
+    } catch (err) {
+      console.error("Error fetching submissions:", err);
+      res.status(500).json({ message: "Failed to fetch submissions" });
+    }
+  });
+
+  app.get("/api/proposals/submissions/:proposalId", async (req, res) => {
+    try {
+      const { proposalId } = req.params;
+      const submission = await storage.getSubmissionByProposalId(proposalId);
+      
+      if (!submission) {
+        return res.status(404).json({ message: "Submission not found" });
+      }
+      
+      res.json({
+        ...submission,
+        payload: JSON.parse(submission.payload)
+      });
+    } catch (err) {
+      console.error("Error fetching submission:", err);
+      res.status(500).json({ message: "Failed to fetch submission" });
+    }
+  });
+
   return httpServer;
 }

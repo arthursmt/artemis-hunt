@@ -1,0 +1,108 @@
+Implement the Contract Reading + Multi-Signature + Submit Proposal flow after a proposal reaches 100% completion. This is the next workflow stage after Product Configuration is fully complete.
+
+1) Change “Next Step” behavior (only when proposal is 100% complete)
+- Currently “Next Step” exists in Product Configuration.
+- Update behavior:
+  A) If proposal completion is < 100% OR proposal has < 3 members OR any required field/photo/signature prerequisites are missing, keep Next Step disabled as it is today.
+  B) If proposal completion is exactly 100%, Next Step should navigate to a new screen: Contract Signature flow.
+- Route: /contract/:proposalId
+
+2) Create new Contract screen
+- New page component: ContractScreen (or similar).
+- Layout (tablet-first):
+  - Top header: “Credit Contract” + back button “Back to Product Config”
+  - Main panel: scrollable contract text (long content placeholder is fine for MVP)
+  - Below the contract text: a disabled checkbox initially:
+    - Label: “I confirm all clients have read and agree to the terms and conditions.”
+  - The checkbox only becomes enabled AFTER the user scrolls the contract container to the very bottom.
+  - Show a subtle helper text until then: “Scroll to the end to enable agreement.”
+
+3) Contract reading requirement (scroll gating)
+- The contract text area must be a fixed-height scroll container (not the whole page scroll).
+- Detect “scrolled to bottom” reliably:
+  - When scrollTop + clientHeight >= scrollHeight - smallThreshold (e.g., 10px), set state contractRead=true.
+- Only after contractRead=true enable the agreement checkbox.
+
+4) Signature capture per client (member)
+- Under the agreement checkbox, show a section: “Client Signatures”.
+- Show a list (or collapsible cards) for each member in the proposal, in member order (leader first).
+- Each member card must display a summary line (read-only):
+  - Client name
+  - Loan amount
+  - First payment date
+  - Number of installments
+- Each member card must include:
+  - A signature pad area (draw with mouse/touch)
+  - Button “Clear signature” (removes the signature so user can redo)
+  - Button “Save signature” (captures the drawn signature as an image data URL)
+- Use a well-known React signature pad library (web MVP), e.g. react-signature-canvas (or equivalent already in repo). If adding a dependency, add it cleanly and commit lockfile updates.
+- A signature is considered completed only when saved (not merely drawn).
+
+5) Store signatures in proposal data
+- Extend Member model:
+  member.signatures = {
+    contractSignature: {
+      dataUrl: string,
+      signedAt: string (ISO),
+      signerName: string (derived from member name at signing time)
+      loanAmount: number,
+      firstPaymentDate: string,
+      installments: number
+    } | null
+  }
+- Persist this to the same proposal store persistence used by Save & Exit, so signatures survive refresh.
+- When member name/loan details change after signing, do NOT silently mutate the signature metadata; instead show a small warning “Details changed after signature” (MVP can just store latest details when saving signature and show them).
+
+6) Submit Proposal button (only after all signatures)
+- Add a primary button at bottom right: “Submit Proposal”
+- Enable rules for Submit Proposal:
+  - contractRead must be true
+  - agreement checkbox must be checked
+  - Every member in the proposal must have a saved contractSignature
+- If any member lacks signature, keep disabled and show inline message: “All clients must sign before submitting.”
+
+7) Double confirmation on submit
+- When “Submit Proposal” is clicked, show a confirmation modal:
+  - Title: “Submit proposal?”
+  - Body: “This will send the contract, signatures, photos, and all collected application data for review.”
+  - Buttons: Cancel / Confirm submit
+- Only on Confirm submit perform the API call.
+
+8) Backend persistence (create if missing)
+- Create a backend endpoint to receive full proposal payload:
+  - POST /api/proposals/submit
+  - Body: { proposalId, submittedAt, payload: fullProposalObject }
+- Store submissions in a backend database for MVP.
+  Options acceptable:
+  A) SQLite (preferred if already used)
+  B) JSON file storage on server (acceptable MVP)
+- Also create GET endpoint for verification:
+  - GET /api/proposals/submissions (returns list with proposalId, submittedAt)
+  - GET /api/proposals/submissions/:proposalId (returns stored payload)
+
+9) Submission behavior after success
+- On successful submit:
+  - Update proposal status to “Under Evaluation”
+  - Remove it from On Going list and appear in Under Eval list
+  - Navigate user to a success screen or Under Eval list with toast: “Proposal submitted successfully.”
+- Ensure the submitted payload includes:
+  - All member form data (Loan Details, Personal, Business, Financials)
+  - All evidence photos (data URLs or references)
+  - All signatures (data URLs + metadata)
+  - Proposal metadata (groupId, leaderId, createdAt, etc.)
+
+10) Edge cases and usability
+- Allow “Clear signature” at any time before submission.
+- If user leaves Contract screen and returns later:
+  - Keep scroll gating (contractRead should be false until they scroll again OR store a flag per proposal “contractViewedAt”. For MVP, you can persist contractRead=true after reaching bottom once.)
+- If proposal is not 100% complete and user tries to access /contract/:proposalId directly:
+  - Redirect back to Product Config and show message: “Complete the proposal before signing the contract.”
+
+11) Acceptance criteria
+- When proposal hits 100%, Next Step takes user to /contract/:proposalId (not Home).
+- User must scroll contract text to bottom to enable agreement checkbox.
+- Each member can sign, clear, and re-sign.
+- Submit Proposal is enabled only when all members have saved signatures and agreement is checked.
+- Submit triggers double confirmation modal.
+- On confirm submit, backend stores full payload; proposal moves to Under Evaluation.
+- Data persists across refresh.

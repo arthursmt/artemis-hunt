@@ -662,12 +662,27 @@ export interface Member {
     institution3Name?: string;
     institution3Amount?: number;
   };
+  signatures?: MemberSignatures;
+}
+
+export interface ContractSignature {
+  dataUrl: string;
+  signedAt: string;
+  signerName: string;
+  loanAmount: number;
+  firstPaymentDate: string;
+  installments: number;
+}
+
+export interface MemberSignatures {
+  contractSignature: ContractSignature | null;
 }
 
 export interface Group {
   groupId: string;
   leaderId: number;
   members: Member[];
+  contractReadAt?: string;
 }
 
 export interface LoanDetails {
