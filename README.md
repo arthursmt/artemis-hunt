@@ -4,6 +4,13 @@ Product case study and MVP design of a multi-app credit platform for microfinanc
 
 This repository currently contains the **Artemis Hunting** app – the tablet-first tool used by field credit agents to prospect clients, build group loan proposals, run basic risk checks and configure loan products before sending them for approval.
 
+ECOSYSTEM MAP (MVP)
+
+HUNT (Field App)  ->  ARISE (Service Hub / API)  ->  GATE (Backoffice)
+- Hunt: creates proposals, captures client data and evidence (docs/photos)
+- ARISE: validates, stores, and exposes proposal lifecycle endpoints (stages)
+- Gate: reviews proposals by stage, supports workflow and operational visibility
+
 ---
 
 ## 1. Overview
