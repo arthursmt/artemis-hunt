@@ -2,7 +2,7 @@
 
 Product case study and MVP design of a multi-app credit platform for microfinance and lending operations.
 
-This repository currently contains the **Artemis Hunting** app – the tablet-first tool used by field credit agents to prospect clients, build group loan proposals, run basic risk checks and configure loan products before sending them for approval.
+This repository currently contains the **Artemis Hunt** app – the tablet-first tool used by field credit agents to prospect clients, build group loan proposals, run basic risk checks and configure loan products before sending them for approval.
 
 ECOSYSTEM MAP (MVP)
 
@@ -40,7 +40,7 @@ This MVP focuses on the **field agent experience**. The goal is to show how a we
 
 ## 2. What this MVP does
 
-From the point of view of a **credit agent**, the Artemis Hunting MVP allows them to:
+From the point of view of a **credit agent**, the Artemis Hunt MVP allows them to:
 
 - View an **“On Going Proposals”** list and resume partially completed applications  
 - Start a **new credit proposal** for an individual or a group  
@@ -200,7 +200,7 @@ Data for each member (Loan Details + Personal Data) is persisted so that proposa
 
 This repository is organized as a small monorepo:
 
-- `client/` – **Artemis Hunting** web app (React + TypeScript + Vite, styled for tablet use)  
+- `client/` – **Artemis Hunt** web app (React + TypeScript + Vite, styled for tablet use)  
 - `backend/`, `server/` – API and infrastructure scaffolding from the Replit stack, used for future evolution of the platform  
 - `shared/` – Shared utilities and types (e.g. proposal store, domain models)  
 - `attached_assets/` – Design and prompt assets used while iterating on the product  
