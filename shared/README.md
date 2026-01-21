@@ -11,3 +11,10 @@ The `shared/` module contains cross-cutting artifacts used across the ecosystem.
 If a change in `shared/` breaks a client flow, document the contract change in:
 - `docs/03_workflows_stages.md` (stage semantics)
 - and/or release notes (when releases are added)
+
+- Module mapping (MVP)
+- client/  -> Hunt + Gate UI (frontends)
+- backend/ -> ARISE services (business logic / integrations)
+- server/  -> API runtime / routing layer
+- shared/  -> shared contracts and utilities
+
