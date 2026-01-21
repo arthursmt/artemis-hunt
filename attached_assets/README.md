@@ -13,3 +13,4 @@ This folder contains visual assets used to explain the Artemis ecosystem and MVP
 - `screenshot_hunt_proposal_capture.png`
 
 Keep filenames descriptive and stable so they can be referenced from README and docs.
+<img width="4356" height="2456" alt="Artemis Diagram" src="https://github.com/user-attachments/assets/c19045b9-dd9d-4a10-a6e0-ee32c3f23be5" />
