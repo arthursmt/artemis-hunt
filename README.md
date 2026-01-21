@@ -11,6 +11,13 @@ HUNT (Field App)  ->  ARISE (Service Hub / API)  ->  GATE (Backoffice)
 - ARISE: validates, stores, and exposes proposal lifecycle endpoints (stages)
 - Gate: reviews proposals by stage, supports workflow and operational visibility
 
+Repository structure (current)
+- client/   -> Frontend app(s) (Hunt/Gate UI code depending on module)
+- server/   -> Backend runtime / API handlers
+- backend/  -> Backend services / integration layers (ARISE components)
+- shared/   -> Shared types/components/utilities across apps
+- attached_assets/ -> Screenshots and diagrams
+
 ---
 
 ## 1. Overview
