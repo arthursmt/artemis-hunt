@@ -1,0 +1,53 @@
+We are still getting 413 on submit:
+POST https://<HUNT>.replit.dev/api/proposals/submit -> 413 Request Entity Too Large.
+This means the server handling /api/* in THIS repo has a small body limit OR the request is being sent to the wrong place.
+
+Do this EXACTLY:
+
+A) Locate the submit call in the frontend:
+- Open: src/pages/ContractScreen.tsx
+- Find: handleConfirmSubmit
+- Confirm it calls apiRequest("/api/proposals/submit", payload) or similar.
+Add a log right before calling apiRequest:
+  const bytes = new Blob([JSON.stringify(payload)]).size;
+  console.log("[SUBMIT PAYLOAD BYTES]", bytes);
+
+B) Locate what serves /api/proposals/submit in this repo (server/proxy):
+Search in the repo for:
+- "/api/proposals/submit"
+- "express.json"
+- "bodyParser.json"
+- "fastify"
+- "createServer"
+- "app.use(express.json"
+- "bodyLimit"
+- "proxy" and "/api"
+Return the exact file(s) and line numbers.
+
+C) Fix the 413 at the correct layer:
+Case 1: Express server exists
+- Ensure these are present BEFORE routes:
+  app.use(express.json({ limit: "50mb" }));
+  app.use(express.urlencoded({ extended: true, limit: "50mb" }));
+- If using bodyParser, set limit to 50mb similarly.
+
+Case 2: Fastify server exists
+- Set bodyLimit to 50 * 1024 * 1024.
+
+Case 3: There is NO backend handling /api in this repo
+- Then /api is wrongly pointing to the Hunt origin. Change the submit URL to point directly to ARISE base URL:
+  const base = import.meta.env.VITE_API_BASE_URL
+  and call `${base}/api/proposals/submit`
+- Also show a clear UI error if VITE_API_BASE_URL is missing.
+
+D) After changes:
+- Restart the Hunt Replit (Stop/Run) and if published, Republish.
+- Verify submit no longer returns 413 (it can return 200/201 or a validation error, but NOT 413).
+
+DELIVERABLES (must):
+1) FILES CHANGED
+2) Code blocks per file
+3) Exact file+lines where:
+   - submit is triggered
+   - server body limit is set (or where base URL is set if no backend)
+4) How to test (step-by-step)
