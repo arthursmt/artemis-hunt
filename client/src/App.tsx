@@ -10,29 +10,44 @@ import { useEffect } from "react";
 declare global {
   interface Window {
     __ARTEMIS_API_BASE__?: string;
+    __ARTEMIS_EMBEDDED_MODE__?: boolean;
   }
 }
 
-// localStorage key for apiBase persistence
+// localStorage key for apiBase persistence (standalone mode only)
 const ARTEMIS_API_BASE_KEY = "ARTEMIS_API_BASE";
 
-function setApiBase(value: string) {
-  localStorage.setItem(ARTEMIS_API_BASE_KEY, value);
-  window.__ARTEMIS_API_BASE__ = value;
-}
-
-// Initialize apiBase from query param or localStorage
+// Initialize from query params
 const qp = new URLSearchParams(window.location.search);
+const embeddedMode = qp.get("embed") === "1";
 const apiBaseFromQuery = qp.get("apiBase");
-const apiBaseFromStorage = localStorage.getItem(ARTEMIS_API_BASE_KEY);
 
-if (apiBaseFromQuery) {
-  setApiBase(apiBaseFromQuery);
-  console.log("[HUNT CONFIG] apiBase from query:", apiBaseFromQuery);
-} else if (apiBaseFromStorage) {
-  window.__ARTEMIS_API_BASE__ = apiBaseFromStorage;
-  console.log("[HUNT CONFIG] apiBase from localStorage:", apiBaseFromStorage);
+// Store embeddedMode flag globally
+window.__ARTEMIS_EMBEDDED_MODE__ = embeddedMode;
+
+console.log("[HUNT EMBED] embeddedMode=", embeddedMode);
+console.log("[HUNT EMBED] apiBase(query)=", apiBaseFromQuery);
+
+if (embeddedMode) {
+  // Embedded mode: only use in-memory, no localStorage
+  if (apiBaseFromQuery) {
+    window.__ARTEMIS_API_BASE__ = apiBaseFromQuery;
+    console.log("[HUNT EMBED] apiBase set from query (in-memory only)");
+  }
+} else {
+  // Standalone mode: use localStorage fallback
+  const apiBaseFromStorage = localStorage.getItem(ARTEMIS_API_BASE_KEY);
+  if (apiBaseFromQuery) {
+    localStorage.setItem(ARTEMIS_API_BASE_KEY, apiBaseFromQuery);
+    window.__ARTEMIS_API_BASE__ = apiBaseFromQuery;
+    console.log("[HUNT CONFIG] apiBase from query:", apiBaseFromQuery);
+  } else if (apiBaseFromStorage) {
+    window.__ARTEMIS_API_BASE__ = apiBaseFromStorage;
+    console.log("[HUNT CONFIG] apiBase from localStorage:", apiBaseFromStorage);
+  }
 }
+
+console.log("[HUNT EMBED] apiBase(memory)=", window.__ARTEMIS_API_BASE__);
 
 // Pages
 import Home from "@/pages/Home";
@@ -77,9 +92,15 @@ function App() {
     const handleMessage = (event: MessageEvent) => {
       const data = event.data;
       if (data && data.type === "ARTEMIS_CONFIG" && typeof data.apiBase === "string") {
-        localStorage.setItem(ARTEMIS_API_BASE_KEY, data.apiBase);
-        window.__ARTEMIS_API_BASE__ = data.apiBase;
-        console.log("[HUNT CONFIG] received apiBase via postMessage:", data.apiBase);
+        // In embedded mode, only store in-memory
+        if (window.__ARTEMIS_EMBEDDED_MODE__) {
+          window.__ARTEMIS_API_BASE__ = data.apiBase;
+          console.log("[HUNT EMBED] received apiBase via postMessage (in-memory):", data.apiBase);
+        } else {
+          localStorage.setItem(ARTEMIS_API_BASE_KEY, data.apiBase);
+          window.__ARTEMIS_API_BASE__ = data.apiBase;
+          console.log("[HUNT CONFIG] received apiBase via postMessage:", data.apiBase);
+        }
       }
     };
     window.addEventListener("message", handleMessage);

@@ -302,28 +302,54 @@ export default function ContractScreen() {
         return count + Object.keys(ev).filter(k => ev[k]?.uri).length;
       }, 0);
       
-      // Check for apiBase configuration
-      const configuredBase = window.__ARTEMIS_API_BASE__ || localStorage.getItem("ARTEMIS_API_BASE");
-      const isEmbedded = window.top !== window.self;
+      // Check for embedded mode and apiBase configuration
+      const embeddedMode = window.__ARTEMIS_EMBEDDED_MODE__ === true;
+      const apiBase = window.__ARTEMIS_API_BASE__;
       
-      console.log("[HUNT SUBMIT] isEmbedded=", isEmbedded);
-      console.log("[HUNT SUBMIT] configuredBase=", configuredBase);
+      console.log("[HUNT SUBMIT] embeddedMode=", embeddedMode);
+      console.log("[HUNT SUBMIT] apiBase=", apiBase);
       
-      // Fail-fast: if embedded but no apiBase, block submission
-      if (isEmbedded && !configuredBase) {
-        console.error("[HUNT SUBMIT] BLOCKED: embedded but no apiBase");
-        toast({
-          title: "Configuration Error",
-          description: "Missing apiBase from Hub. Cannot submit.",
-          variant: "destructive",
-        });
-        setIsSubmitting(false);
-        return;
+      // HARD BLOCK: strict validation for embedded mode
+      if (embeddedMode) {
+        if (!apiBase) {
+          console.error("[HUNT SUBMIT] BLOCKED: embeddedMode but missing apiBase");
+          toast({
+            title: "Configuration Error",
+            description: "Embedded mode misconfigured: missing apiBase from Hub.",
+            variant: "destructive",
+          });
+          setIsSubmitting(false);
+          return;
+        }
+        
+        // Ensure apiBase doesn't point back to Hunt's own origin
+        try {
+          const apiBaseOrigin = new URL(apiBase).origin;
+          if (apiBaseOrigin === window.location.origin) {
+            console.error("[HUNT SUBMIT] BLOCKED: embeddedMode but apiBase equals Hunt origin", apiBaseOrigin);
+            toast({
+              title: "Configuration Error",
+              description: "Embedded mode misconfigured: apiBase points to Hunt, expected Hub.",
+              variant: "destructive",
+            });
+            setIsSubmitting(false);
+            return;
+          }
+        } catch (e) {
+          console.error("[HUNT SUBMIT] BLOCKED: invalid apiBase URL", apiBase);
+          toast({
+            title: "Configuration Error",
+            description: "Embedded mode misconfigured: invalid apiBase URL.",
+            variant: "destructive",
+          });
+          setIsSubmitting(false);
+          return;
+        }
       }
       
-      // Compute target URL
-      const targetUrl = configuredBase
-        ? `${configuredBase}/api/proposals/submit`
+      // Compute target URL: embedded mode MUST use apiBase, standalone uses own origin
+      const targetUrl = embeddedMode
+        ? `${apiBase}/api/proposals/submit`
         : `${window.location.origin}/api/proposals/submit`;
       
       console.log("[HUNT SUBMIT] targetUrl=", targetUrl);
@@ -406,7 +432,7 @@ export default function ContractScreen() {
         "text-xs px-4 py-1 text-center font-mono",
         envInfo.isDev ? "bg-yellow-100 text-yellow-800" : "bg-green-100 text-green-800"
       )} data-testid="env-debug-banner">
-        {envInfo.mode.toUpperCase()} | Embedded: {envInfo.isEmbedded ? 'Yes' : 'No'} | Base: {envInfo.configuredBase || 'default'} | Submit: {envInfo.submitUrl}
+        {envInfo.mode.toUpperCase()} | embed={envInfo.embeddedMode ? '1' : '0'} | apiBase={envInfo.apiBase || 'none'} | Submit: {envInfo.submitUrl}
       </div>
       
       <header className="bg-white border-b sticky top-0 z-50">
