@@ -11,12 +11,13 @@ export function getBaseUrl(): string {
   return window.location.origin;
 }
 
-export function getEnvironmentInfo(): { isDev: boolean; baseUrl: string; submitUrl: string; mode: 'hub' | 'standalone'; configuredBase: string | undefined } {
+export function getEnvironmentInfo(): { isDev: boolean; baseUrl: string; submitUrl: string; mode: 'hub' | 'standalone'; configuredBase: string | undefined; isEmbedded: boolean } {
   const baseUrl = getBaseUrl();
   const isDev = baseUrl.includes('.replit.dev') || baseUrl.includes('localhost');
   
-  // Use explicit apiBase from query param or postMessage (set by Hub)
-  const configuredBase = (window as any).__ARTEMIS_API_BASE__ as string | undefined;
+  // Use explicit apiBase from query param, postMessage, or localStorage
+  const configuredBase = (window as any).__ARTEMIS_API_BASE__ || localStorage.getItem("ARTEMIS_API_BASE") || undefined;
+  const isEmbedded = window.top !== window.self;
   
   // If configuredBase is set, we're in Hub mode
   const mode = configuredBase ? 'hub' : 'standalone';
@@ -26,7 +27,7 @@ export function getEnvironmentInfo(): { isDev: boolean; baseUrl: string; submitU
     ? `${configuredBase}/api/proposals/submit`
     : `${import.meta.env.VITE_API_BASE_URL || window.location.origin}/api/proposals/submit`;
   
-  return { isDev, baseUrl, submitUrl, mode, configuredBase };
+  return { isDev, baseUrl, submitUrl, mode, configuredBase, isEmbedded };
 }
 
 export async function apiRequest(

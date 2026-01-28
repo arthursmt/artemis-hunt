@@ -301,10 +301,32 @@ export default function ContractScreen() {
         const ev = m.evidence || {};
         return count + Object.keys(ev).filter(k => ev[k]?.uri).length;
       }, 0);
-      const { submitUrl, mode, configuredBase } = getEnvironmentInfo();
+      
+      // Check for apiBase configuration
+      const configuredBase = window.__ARTEMIS_API_BASE__ || localStorage.getItem("ARTEMIS_API_BASE");
+      const isEmbedded = window.top !== window.self;
+      
+      console.log("[HUNT SUBMIT] isEmbedded=", isEmbedded);
       console.log("[HUNT SUBMIT] configuredBase=", configuredBase);
-      console.log("[HUNT SUBMIT] mode=", mode);
-      console.log("[HUNT SUBMIT] targetUrl=", submitUrl);
+      
+      // Fail-fast: if embedded but no apiBase, block submission
+      if (isEmbedded && !configuredBase) {
+        console.error("[HUNT SUBMIT] BLOCKED: embedded but no apiBase");
+        toast({
+          title: "Configuration Error",
+          description: "Missing apiBase from Hub. Cannot submit.",
+          variant: "destructive",
+        });
+        setIsSubmitting(false);
+        return;
+      }
+      
+      // Compute target URL
+      const targetUrl = configuredBase
+        ? `${configuredBase}/api/proposals/submit`
+        : `${window.location.origin}/api/proposals/submit`;
+      
+      console.log("[HUNT SUBMIT] targetUrl=", targetUrl);
       console.log("[SUBMIT]", {
         bytes: payloadBytes,
         photoCount,
@@ -317,7 +339,7 @@ export default function ContractScreen() {
       };
       
       // Submit to configured endpoint (Hub/Arise in production, local in dev)
-      const res = await fetch(submitUrl, {
+      const res = await fetch(targetUrl, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(submissionPayload),
@@ -384,7 +406,7 @@ export default function ContractScreen() {
         "text-xs px-4 py-1 text-center font-mono",
         envInfo.isDev ? "bg-yellow-100 text-yellow-800" : "bg-green-100 text-green-800"
       )} data-testid="env-debug-banner">
-        {envInfo.mode.toUpperCase()} | Base: {envInfo.configuredBase || 'default'} | Submit: {envInfo.submitUrl}
+        {envInfo.mode.toUpperCase()} | Embedded: {envInfo.isEmbedded ? 'Yes' : 'No'} | Base: {envInfo.configuredBase || 'default'} | Submit: {envInfo.submitUrl}
       </div>
       
       <header className="bg-white border-b sticky top-0 z-50">

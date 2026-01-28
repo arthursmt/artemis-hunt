@@ -13,12 +13,25 @@ declare global {
   }
 }
 
-// Initialize apiBase from query param immediately
+// localStorage key for apiBase persistence
+const ARTEMIS_API_BASE_KEY = "ARTEMIS_API_BASE";
+
+function setApiBase(value: string) {
+  localStorage.setItem(ARTEMIS_API_BASE_KEY, value);
+  window.__ARTEMIS_API_BASE__ = value;
+}
+
+// Initialize apiBase from query param or localStorage
 const qp = new URLSearchParams(window.location.search);
 const apiBaseFromQuery = qp.get("apiBase");
+const apiBaseFromStorage = localStorage.getItem(ARTEMIS_API_BASE_KEY);
+
 if (apiBaseFromQuery) {
-  window.__ARTEMIS_API_BASE__ = apiBaseFromQuery;
+  setApiBase(apiBaseFromQuery);
   console.log("[HUNT CONFIG] apiBase from query:", apiBaseFromQuery);
+} else if (apiBaseFromStorage) {
+  window.__ARTEMIS_API_BASE__ = apiBaseFromStorage;
+  console.log("[HUNT CONFIG] apiBase from localStorage:", apiBaseFromStorage);
 }
 
 // Pages
@@ -64,6 +77,7 @@ function App() {
     const handleMessage = (event: MessageEvent) => {
       const data = event.data;
       if (data && data.type === "ARTEMIS_CONFIG" && typeof data.apiBase === "string") {
+        localStorage.setItem(ARTEMIS_API_BASE_KEY, data.apiBase);
         window.__ARTEMIS_API_BASE__ = data.apiBase;
         console.log("[HUNT CONFIG] received apiBase via postMessage:", data.apiBase);
       }
