@@ -545,10 +545,11 @@ export default function ProductConfigScreen() {
   const handleNextStep = () => {
     if (!group || !proposalId) return;
     
-    if (group.members.length < 3) {
+    if (group.members.length < 1) {
+      console.log('[ProductConfig] Next blocked: members.length', group.members.length, 'requiredMembers: 1');
       toast({
         title: "Minimum Members Required",
-        description: "You need at least 3 members to submit this proposal.",
+        description: "You need at least 1 member to submit this proposal.",
         variant: "destructive",
       });
       return;
@@ -1072,7 +1073,7 @@ export default function ProductConfigScreen() {
             >
               {canSubmitProposal ? "Sign Contract" : totalMissingEvidence > 0 
                 ? `${totalMissingEvidence} photos missing` 
-                : `Next Step (${group?.members.length || 0}/3 members)`}
+                : `Next Step (${group?.members.length || 0}/1 members)`}
             </Button>
           </div>
         </div>
