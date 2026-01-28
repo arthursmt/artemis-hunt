@@ -526,12 +526,13 @@ export const EVIDENCE_METADATA: Record<EvidenceKey, {
   required: boolean;
   conditionalOn?: { loanGoal?: string[] };
 }> = {
+  // Only clientSelfie is mandatory now (for simplified E2E testing)
   clientSelfie: { label: 'Client Photo', category: 'identity', required: true },
-  idFront: { label: 'ID Front', category: 'identity', required: true },
-  idBack: { label: 'ID Back', category: 'identity', required: true },
+  idFront: { label: 'ID Front', category: 'identity', required: false },
+  idBack: { label: 'ID Back', category: 'identity', required: false },
   residenceProofOfAddress: { label: 'Residence Proof', category: 'identity', required: false },
-  businessProofOfAddress: { label: 'Business Proof of Address', category: 'business', required: true },
-  businessPhoto: { label: 'Business Photo', category: 'business', required: true },
+  businessProofOfAddress: { label: 'Business Proof of Address', category: 'business', required: false },
+  businessPhoto: { label: 'Business Photo', category: 'business', required: false },
   inventoryPhoto: { label: 'Inventory Photo', category: 'business', required: false },
   utilityBillElectricity: { label: 'Electricity Bill', category: 'business', required: false },
   utilityBillWater: { label: 'Water Bill', category: 'business', required: false },
@@ -544,12 +545,10 @@ export function getRequiredEvidenceKeys(loanGoal?: string): EvidenceKey[] {
   
   for (const [key, meta] of Object.entries(EVIDENCE_METADATA)) {
     const evidenceKey = key as EvidenceKey;
+    // Only include photos marked as required=true (currently only clientSelfie)
+    // Conditional photos are no longer enforced for E2E testing simplicity
     if (meta.required) {
       required.push(evidenceKey);
-    } else if (meta.conditionalOn?.loanGoal && loanGoal) {
-      if (meta.conditionalOn.loanGoal.includes(loanGoal)) {
-        required.push(evidenceKey);
-      }
     }
   }
   

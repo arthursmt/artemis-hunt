@@ -7,6 +7,9 @@ Artemis Hunting MVP is a commercial application for microfinance field agents (l
 The application follows a full-stack architecture with a React frontend and Express.js backend, using PostgreSQL for data persistence. Currently, the frontend uses mock data for development purposes while the backend infrastructure is in place.
 
 ## Recent Changes
+- Simplified validation: only 1 client required, only clientSelfie photo mandatory (Jan 28, 2026)
+- Reduced submit payload: strips empty photos, backend returns small response object (Jan 28, 2026)
+- Added submit logging: content-length, photo count, keys on client and server (Jan 28, 2026)
 - Implemented Contract Signing and Submission flow with scroll-gated agreement, individual member signatures, and double confirmation (Jan 20, 2026)
 - Added `/contract/:id` route for contract reading and signature capture (Jan 20, 2026)
 - Created `proposalSubmissions` database table for storing submitted proposals (Jan 20, 2026)

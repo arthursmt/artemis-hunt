@@ -1,0 +1,34 @@
+Goal: Reduce submit payload + simplify validation for E2E test.
+We want: 1 client only + only 1 required photo (leader/client photo). All other photos optional.
+This is to ensure the payload is small and we can confirm the photo reaches Gate via Arise.
+
+Context:
+- Current submit returns 201 and includes huge payload (base64 photos) in response.
+- We suspect large payload may be failing somewhere (Hunt -> Hub -> Arise), so we need minimal evidence.
+
+Tasks:
+1) Validation rules:
+   - Change form/validation so that only ONE client (the leader) is required to reach 100% completion and be allowed to submit.
+   - Remove requirement of 3 clients. If there is an array of members/clients, allow length=1.
+2) Evidence/photo rules:
+   - Only ONE photo is mandatory: leader/client main photo (the “client photo”).
+   - All other evidence images/photos become optional (no longer block submit / completion).
+3) Payload reduction:
+   - Ensure submit request body includes only the mandatory photo (and the required text fields).
+   - Do not include optional photos if user didn’t upload them.
+   - If the backend currently echoes the full payload back in the response, STOP echoing the full payload; respond with a small object:
+     { proposalId, submittedAt, groupId, leaderName, sizeBytes }
+     (No base64 content in response.)
+4) State handling:
+   - Do NOT delete/clear the local draft unless the upstream workflow is confirmed (Hub/Arise success).
+   - If upstream fails, keep the draft and show an error (LOCAL_FAILED) so we can retry.
+5) Add logs (server and/or client):
+   - On submit: log content-length, keys, photo count, and whether forwarding to Hub occurred.
+   - Log upstream status (Hub/Arise) and correlationId if present.
+
+Acceptance tests:
+- With 1 client + 1 photo, the UI reaches 100% and allows submit.
+- Network POST /api/proposals/submit has a noticeably smaller payload (only 1 base64 image).
+- Response body is small (no full payload echo).
+- After submit, Hub debug endpoint (/api/debug/submit-last) shows the attempt.
+- Arise /api/gate/proposals?stage=DOC_REVIEW increments and Gate shows the new proposal.

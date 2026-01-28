@@ -266,13 +266,50 @@ export default function ContractScreen() {
     setIsSubmitting(true);
     
     try {
-      // Prepare the payload - flat structure matching schema
+      // Strip optional photos from payload to reduce size
+      const strippedMembers = proposal.data.group.members.map(member => {
+        const evidence = member.evidence || {};
+        // Only keep photos that have actual data
+        const strippedEvidence: Record<string, any> = {};
+        for (const [key, value] of Object.entries(evidence)) {
+          const evidenceItem = value as { uri?: string } | null;
+          if (evidenceItem && evidenceItem.uri) {
+            strippedEvidence[key] = evidenceItem;
+          }
+        }
+        return {
+          ...member,
+          evidence: Object.keys(strippedEvidence).length > 0 ? strippedEvidence : undefined
+        };
+      });
+      
+      const minimalPayload = {
+        ...proposal,
+        status: "under_evaluation",
+        data: {
+          ...proposal.data,
+          group: {
+            ...proposal.data.group,
+            members: strippedMembers
+          }
+        }
+      };
+      
+      // Log payload size before submit
+      const payloadBytes = new Blob([JSON.stringify(minimalPayload)]).size;
+      const photoCount = strippedMembers.reduce((count, m) => {
+        const ev = m.evidence || {};
+        return count + Object.keys(ev).filter(k => ev[k]?.uri).length;
+      }, 0);
+      console.log("[SUBMIT]", {
+        bytes: payloadBytes,
+        photoCount,
+        memberCount: strippedMembers.length
+      });
+      
       const submissionPayload = {
         proposalId,
-        payload: {
-          ...proposal,
-          status: "under_evaluation"
-        }
+        payload: minimalPayload
       };
       
       // Submit to backend using apiRequest
