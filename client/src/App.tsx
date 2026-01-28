@@ -4,6 +4,22 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/not-found";
+import { useEffect } from "react";
+
+// Extend Window interface for apiBase config
+declare global {
+  interface Window {
+    __ARTEMIS_API_BASE__?: string;
+  }
+}
+
+// Initialize apiBase from query param immediately
+const qp = new URLSearchParams(window.location.search);
+const apiBaseFromQuery = qp.get("apiBase");
+if (apiBaseFromQuery) {
+  window.__ARTEMIS_API_BASE__ = apiBaseFromQuery;
+  console.log("[HUNT CONFIG] apiBase from query:", apiBaseFromQuery);
+}
 
 // Pages
 import Home from "@/pages/Home";
@@ -43,6 +59,19 @@ function Router() {
 }
 
 function App() {
+  // Listen for postMessage from parent (Hub) to set apiBase
+  useEffect(() => {
+    const handleMessage = (event: MessageEvent) => {
+      const data = event.data;
+      if (data && data.type === "ARTEMIS_CONFIG" && typeof data.apiBase === "string") {
+        window.__ARTEMIS_API_BASE__ = data.apiBase;
+        console.log("[HUNT CONFIG] received apiBase via postMessage:", data.apiBase);
+      }
+    };
+    window.addEventListener("message", handleMessage);
+    return () => window.removeEventListener("message", handleMessage);
+  }, []);
+
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>

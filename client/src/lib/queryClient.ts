@@ -11,33 +11,22 @@ export function getBaseUrl(): string {
   return window.location.origin;
 }
 
-export function getEnvironmentInfo(): { isDev: boolean; baseUrl: string; submitUrl: string; mode: 'hub' | 'standalone'; isEmbedded: boolean; referrer: string; ancestors: string[] } {
+export function getEnvironmentInfo(): { isDev: boolean; baseUrl: string; submitUrl: string; mode: 'hub' | 'standalone'; configuredBase: string | undefined } {
   const baseUrl = getBaseUrl();
   const isDev = baseUrl.includes('.replit.dev') || baseUrl.includes('localhost');
   
-  // Detect if embedded in iframe
-  const isEmbedded = window.top !== window;
-  const referrer = document.referrer || '';
+  // Use explicit apiBase from query param or postMessage (set by Hub)
+  const configuredBase = (window as any).__ARTEMIS_API_BASE__ as string | undefined;
   
-  // Use ancestorOrigins (Chrome) as PRIMARY signal for cross-origin iframe detection
-  const ancestors = Array.from((window.location as any).ancestorOrigins || []) as string[];
-  const parentOrigin = ancestors.length ? ancestors[ancestors.length - 1] : '';
+  // If configuredBase is set, we're in Hub mode
+  const mode = configuredBase ? 'hub' : 'standalone';
   
-  // Check both ancestorOrigins and referrer for Hub detection
-  const isFromHub = parentOrigin.includes('artemis-hub.replit.app') 
-    || referrer.includes('artemis-hub.replit.app');
-  
-  // Hub mode: embedded from Hub OR direct access on Hub domain
-  const hostIsHub = window.location.host.includes('artemis-hub.replit.app');
-  const isHub = isFromHub || hostIsHub;
-  const mode = isHub ? 'hub' : 'standalone';
-  
-  // If in Hub, submit to Hub proxy; otherwise use own origin
-  const submitUrl = isHub 
-    ? 'https://artemis-hub.replit.app/api/proposals/submit'
+  // Use configured base if available, otherwise fall back to env var or own origin
+  const submitUrl = configuredBase 
+    ? `${configuredBase}/api/proposals/submit`
     : `${import.meta.env.VITE_API_BASE_URL || window.location.origin}/api/proposals/submit`;
   
-  return { isDev, baseUrl, submitUrl, mode, isEmbedded, referrer, ancestors };
+  return { isDev, baseUrl, submitUrl, mode, configuredBase };
 }
 
 export async function apiRequest(
