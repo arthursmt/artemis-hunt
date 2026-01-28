@@ -301,10 +301,10 @@ export default function ContractScreen() {
         const ev = m.evidence || {};
         return count + Object.keys(ev).filter(k => ev[k]?.uri).length;
       }, 0);
-      const { submitUrl, isDev, baseUrl, mode } = getEnvironmentInfo();
+      const { submitUrl, isDev, baseUrl, mode, isEmbedded, referrer } = getEnvironmentInfo();
+      console.log("[HUNT SUBMIT] embedded=" + isEmbedded + " referrer=" + referrer);
       console.log("[HUNT SUBMIT] mode=" + mode);
       console.log("[HUNT SUBMIT] targetUrl=" + submitUrl);
-      console.log("[HUNT SUBMIT] env=" + (isDev ? "DEV" : "PROD") + " baseUrl=" + baseUrl);
       console.log("[SUBMIT]", {
         bytes: payloadBytes,
         photoCount,
@@ -384,7 +384,7 @@ export default function ContractScreen() {
         "text-xs px-4 py-1 text-center font-mono",
         envInfo.isDev ? "bg-yellow-100 text-yellow-800" : "bg-green-100 text-green-800"
       )} data-testid="env-debug-banner">
-        {envInfo.mode.toUpperCase()} | {envInfo.isDev ? "DEV" : "PROD"} | Submit: {envInfo.submitUrl}
+        {envInfo.mode.toUpperCase()} | Embedded: {envInfo.isEmbedded ? 'Y' : 'N'} | Submit: {envInfo.submitUrl}
       </div>
       
       <header className="bg-white border-b sticky top-0 z-50">

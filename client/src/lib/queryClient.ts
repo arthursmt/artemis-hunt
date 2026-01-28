@@ -11,31 +11,26 @@ export function getBaseUrl(): string {
   return window.location.origin;
 }
 
-export function getEnvironmentInfo(): { isDev: boolean; baseUrl: string; submitUrl: string; mode: 'hub' | 'standalone' } {
+export function getEnvironmentInfo(): { isDev: boolean; baseUrl: string; submitUrl: string; mode: 'hub' | 'standalone'; isEmbedded: boolean; referrer: string } {
   const baseUrl = getBaseUrl();
   const isDev = baseUrl.includes('.replit.dev') || baseUrl.includes('localhost');
   
-  // Detect if running inside Hub:
-  // 1. Direct access on Hub domain (window.location.host)
-  // 2. Path starts with /hunt (Hub routing)
-  // 3. URL param ?hub=1 (explicit flag from Hub embed)
-  // 4. Referrer from Hub domain (iframe embed)
-  const urlParams = new URLSearchParams(window.location.search);
-  const hubParam = urlParams.get('hub') === '1';
-  const referrerFromHub = document.referrer.includes('artemis-hub.replit.app');
-  const hostIsHub = window.location.host.includes('artemis-hub.replit.app');
-  const pathIsHunt = window.location.pathname.startsWith('/hunt');
+  // Detect if embedded in iframe
+  const isEmbedded = window.top !== window;
+  const referrer = document.referrer || '';
+  const isFromHub = referrer.includes('artemis-hub.replit.app');
   
-  const isHub = hostIsHub || pathIsHunt || hubParam || referrerFromHub;
+  // Hub mode: embedded iframe from Hub OR direct access on Hub domain
+  const hostIsHub = window.location.host.includes('artemis-hub.replit.app');
+  const isHub = (isEmbedded && isFromHub) || hostIsHub;
   const mode = isHub ? 'hub' : 'standalone';
   
-  // If in Hub, submit to Hub's origin or known Hub URL; otherwise use own origin
-  const hubBaseUrl = hostIsHub ? window.location.origin : 'https://artemis-hub.replit.app';
+  // If in Hub (embedded or direct), submit to Hub proxy; otherwise use own origin
   const submitUrl = isHub 
-    ? `${hubBaseUrl}/api/proposals/submit`
+    ? 'https://artemis-hub.replit.app/api/proposals/submit'
     : `${import.meta.env.VITE_API_BASE_URL || window.location.origin}/api/proposals/submit`;
   
-  return { isDev, baseUrl, submitUrl, mode };
+  return { isDev, baseUrl, submitUrl, mode, isEmbedded, referrer };
 }
 
 export async function apiRequest(
