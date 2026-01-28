@@ -37,3 +37,8 @@ author = "agent"
 task = "shell.exec"
 args = "npm run dev"
 waitForPort = 5000
+
+[userenv]
+
+[userenv.shared]
+VITE_SUBMIT_API_URL = "https://artemis-hub.replit.app/api/proposals/submit"

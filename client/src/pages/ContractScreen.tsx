@@ -17,7 +17,7 @@ import { useToast } from "@/hooks/use-toast";
 import { ArrowLeft, FileText, Check, AlertCircle, Pen, Trash2, User, Calendar, DollarSign, Hash } from "lucide-react";
 import { useProposalStore, Member, LoanDetails, ContractSignature } from "@/lib/proposalStore";
 import { isProposalCompleteWithEvidence } from "@/lib/completionHelpers";
-import { apiRequest, queryClient } from "@/lib/queryClient";
+import { apiRequest, queryClient, getEnvironmentInfo } from "@/lib/queryClient";
 import SignatureCanvas from "react-signature-canvas";
 import { cn } from "@/lib/utils";
 
@@ -301,6 +301,9 @@ export default function ContractScreen() {
         const ev = m.evidence || {};
         return count + Object.keys(ev).filter(k => ev[k]?.uri).length;
       }, 0);
+      const { submitUrl, isDev, baseUrl } = getEnvironmentInfo();
+      console.log("[HUNT SUBMIT] url=" + submitUrl);
+      console.log("[HUNT SUBMIT] env=" + (isDev ? "DEV" : "PROD") + " baseUrl=" + baseUrl);
       console.log("[SUBMIT]", {
         bytes: payloadBytes,
         photoCount,
@@ -312,8 +315,20 @@ export default function ContractScreen() {
         payload: minimalPayload
       };
       
-      // Submit to backend using apiRequest
-      await apiRequest("POST", "/api/proposals/submit", submissionPayload);
+      // Submit to configured endpoint (Hub/Arise in production, local in dev)
+      const res = await fetch(submitUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(submissionPayload),
+        credentials: "include",
+      });
+      
+      console.log("[HUNT SUBMIT] status=" + res.status);
+      
+      if (!res.ok) {
+        const text = await res.text();
+        throw new Error(`${res.status}: ${text}`);
+      }
       
       // Invalidate submissions cache
       queryClient.invalidateQueries({ queryKey: ["/api/proposals/submissions"] });
@@ -359,8 +374,18 @@ export default function ContractScreen() {
     );
   }
   
+  const envInfo = getEnvironmentInfo();
+  
   return (
     <div className="min-h-screen bg-slate-50 pb-20 font-display">
+      {/* Debug Banner */}
+      <div className={cn(
+        "text-xs px-4 py-1 text-center font-mono",
+        envInfo.isDev ? "bg-yellow-100 text-yellow-800" : "bg-green-100 text-green-800"
+      )} data-testid="env-debug-banner">
+        {envInfo.isDev ? "DEV" : "PROD"} | Submit: {envInfo.submitUrl}
+      </div>
+      
       <header className="bg-white border-b sticky top-0 z-50">
         <div className="max-w-5xl mx-auto px-4 h-16 flex items-center justify-between">
           <div className="flex items-center gap-4">

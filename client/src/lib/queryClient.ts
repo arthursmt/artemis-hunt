@@ -7,6 +7,17 @@ async function throwIfResNotOk(res: Response) {
   }
 }
 
+export function getBaseUrl(): string {
+  return window.location.origin;
+}
+
+export function getEnvironmentInfo(): { isDev: boolean; baseUrl: string; submitUrl: string } {
+  const baseUrl = getBaseUrl();
+  const isDev = baseUrl.includes('.replit.dev') || baseUrl.includes('localhost');
+  const submitUrl = import.meta.env.VITE_SUBMIT_API_URL || `${baseUrl}/api/proposals/submit`;
+  return { isDev, baseUrl, submitUrl };
+}
+
 export async function apiRequest(
   method: string,
   url: string,
