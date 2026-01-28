@@ -11,11 +11,31 @@ export function getBaseUrl(): string {
   return window.location.origin;
 }
 
-export function getEnvironmentInfo(): { isDev: boolean; baseUrl: string; submitUrl: string } {
+export function getEnvironmentInfo(): { isDev: boolean; baseUrl: string; submitUrl: string; mode: 'hub' | 'standalone' } {
   const baseUrl = getBaseUrl();
   const isDev = baseUrl.includes('.replit.dev') || baseUrl.includes('localhost');
-  const submitUrl = import.meta.env.VITE_SUBMIT_API_URL || `${baseUrl}/api/proposals/submit`;
-  return { isDev, baseUrl, submitUrl };
+  
+  // Detect if running inside Hub:
+  // 1. Direct access on Hub domain (window.location.host)
+  // 2. Path starts with /hunt (Hub routing)
+  // 3. URL param ?hub=1 (explicit flag from Hub embed)
+  // 4. Referrer from Hub domain (iframe embed)
+  const urlParams = new URLSearchParams(window.location.search);
+  const hubParam = urlParams.get('hub') === '1';
+  const referrerFromHub = document.referrer.includes('artemis-hub.replit.app');
+  const hostIsHub = window.location.host.includes('artemis-hub.replit.app');
+  const pathIsHunt = window.location.pathname.startsWith('/hunt');
+  
+  const isHub = hostIsHub || pathIsHunt || hubParam || referrerFromHub;
+  const mode = isHub ? 'hub' : 'standalone';
+  
+  // If in Hub, submit to Hub's origin or known Hub URL; otherwise use own origin
+  const hubBaseUrl = hostIsHub ? window.location.origin : 'https://artemis-hub.replit.app';
+  const submitUrl = isHub 
+    ? `${hubBaseUrl}/api/proposals/submit`
+    : `${import.meta.env.VITE_API_BASE_URL || window.location.origin}/api/proposals/submit`;
+  
+  return { isDev, baseUrl, submitUrl, mode };
 }
 
 export async function apiRequest(
