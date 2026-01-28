@@ -1,0 +1,40 @@
+We need to fix Hunt submissions when Hunt is loaded inside Hub (cross-origin iframe).
+
+Current behavior:
+Even when user is on https://artemis-hub.replit.app/hunt, the Network Request URL for submit is still:
+https://artemis-hunting--arthursmt89.replit.app/api/proposals/submit
+So the proposal never goes through Hub -> Arise, and Gate never sees it.
+
+Root cause:
+document.referrer is unreliable/empty due to cross-origin iframe referrer policy (strict-origin-when-cross-origin).
+So the previous "referrer includes artemis-hub" detection does not trigger.
+
+Task:
+1) Update the submit target URL resolution to use window.location.ancestorOrigins (Chrome) as the PRIMARY signal.
+   Example logic:
+   - const ancestors = Array.from((window.location as any).ancestorOrigins || []);
+   - const parentOrigin = ancestors.length ? ancestors[ancestors.length - 1] : "";
+   - const isFromHub = parentOrigin.includes("artemis-hub.replit.app")
+       || (document.referrer || "").includes("artemis-hub.replit.app");
+
+   - If isFromHub === true, FORCE submit target to:
+     https://artemis-hub.replit.app/api/proposals/submit
+
+   - Else submit normally to Hunt backend:
+     `${import.meta.env.VITE_API_BASE_URL || window.location.origin}/api/proposals/submit`
+
+2) Add CLIENT-SIDE console logs right before the fetch:
+   console.log("[HUNT SUBMIT] ancestors=", ancestors);
+   console.log("[HUNT SUBMIT] referrer=", document.referrer);
+   console.log("[HUNT SUBMIT] isFromHub=", isFromHub);
+   console.log("[HUNT SUBMIT] targetUrl=", targetUrl);
+
+3) Ensure the submit code path actually uses this targetUrl (no other hardcoded base).
+   Search for the submit fetch call and ensure it uses the computed targetUrl variable.
+
+Acceptance Criteria:
+- When using Hunt via Hub (/hunt), Request URL becomes:
+  https://artemis-hub.replit.app/api/proposals/submit
+- When using standalone Hunt, it remains:
+  https://artemis-hunting--arthursmt89.replit.app/api/proposals/submit
+- After Hub submit, Arise DOC_REVIEW count increases and Gate displays it.

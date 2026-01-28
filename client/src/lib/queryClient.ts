@@ -11,26 +11,33 @@ export function getBaseUrl(): string {
   return window.location.origin;
 }
 
-export function getEnvironmentInfo(): { isDev: boolean; baseUrl: string; submitUrl: string; mode: 'hub' | 'standalone'; isEmbedded: boolean; referrer: string } {
+export function getEnvironmentInfo(): { isDev: boolean; baseUrl: string; submitUrl: string; mode: 'hub' | 'standalone'; isEmbedded: boolean; referrer: string; ancestors: string[] } {
   const baseUrl = getBaseUrl();
   const isDev = baseUrl.includes('.replit.dev') || baseUrl.includes('localhost');
   
   // Detect if embedded in iframe
   const isEmbedded = window.top !== window;
   const referrer = document.referrer || '';
-  const isFromHub = referrer.includes('artemis-hub.replit.app');
   
-  // Hub mode: embedded iframe from Hub OR direct access on Hub domain
+  // Use ancestorOrigins (Chrome) as PRIMARY signal for cross-origin iframe detection
+  const ancestors = Array.from((window.location as any).ancestorOrigins || []) as string[];
+  const parentOrigin = ancestors.length ? ancestors[ancestors.length - 1] : '';
+  
+  // Check both ancestorOrigins and referrer for Hub detection
+  const isFromHub = parentOrigin.includes('artemis-hub.replit.app') 
+    || referrer.includes('artemis-hub.replit.app');
+  
+  // Hub mode: embedded from Hub OR direct access on Hub domain
   const hostIsHub = window.location.host.includes('artemis-hub.replit.app');
-  const isHub = (isEmbedded && isFromHub) || hostIsHub;
+  const isHub = isFromHub || hostIsHub;
   const mode = isHub ? 'hub' : 'standalone';
   
-  // If in Hub (embedded or direct), submit to Hub proxy; otherwise use own origin
+  // If in Hub, submit to Hub proxy; otherwise use own origin
   const submitUrl = isHub 
     ? 'https://artemis-hub.replit.app/api/proposals/submit'
     : `${import.meta.env.VITE_API_BASE_URL || window.location.origin}/api/proposals/submit`;
   
-  return { isDev, baseUrl, submitUrl, mode, isEmbedded, referrer };
+  return { isDev, baseUrl, submitUrl, mode, isEmbedded, referrer, ancestors };
 }
 
 export async function apiRequest(

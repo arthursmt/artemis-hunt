@@ -301,10 +301,13 @@ export default function ContractScreen() {
         const ev = m.evidence || {};
         return count + Object.keys(ev).filter(k => ev[k]?.uri).length;
       }, 0);
-      const { submitUrl, isDev, baseUrl, mode, isEmbedded, referrer } = getEnvironmentInfo();
-      console.log("[HUNT SUBMIT] embedded=" + isEmbedded + " referrer=" + referrer);
-      console.log("[HUNT SUBMIT] mode=" + mode);
-      console.log("[HUNT SUBMIT] targetUrl=" + submitUrl);
+      const { submitUrl, mode, isEmbedded, referrer, ancestors } = getEnvironmentInfo();
+      const isFromHub = ancestors.some(a => a.includes('artemis-hub.replit.app')) 
+        || referrer.includes('artemis-hub.replit.app');
+      console.log("[HUNT SUBMIT] ancestors=", ancestors);
+      console.log("[HUNT SUBMIT] referrer=", referrer);
+      console.log("[HUNT SUBMIT] isFromHub=", isFromHub);
+      console.log("[HUNT SUBMIT] targetUrl=", submitUrl);
       console.log("[SUBMIT]", {
         bytes: payloadBytes,
         photoCount,
@@ -384,7 +387,7 @@ export default function ContractScreen() {
         "text-xs px-4 py-1 text-center font-mono",
         envInfo.isDev ? "bg-yellow-100 text-yellow-800" : "bg-green-100 text-green-800"
       )} data-testid="env-debug-banner">
-        {envInfo.mode.toUpperCase()} | Embedded: {envInfo.isEmbedded ? 'Y' : 'N'} | Submit: {envInfo.submitUrl}
+        {envInfo.mode.toUpperCase()} | Ancestors: {envInfo.ancestors.length} | Submit: {envInfo.submitUrl}
       </div>
       
       <header className="bg-white border-b sticky top-0 z-50">
