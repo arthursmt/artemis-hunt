@@ -14,40 +14,20 @@ declare global {
   }
 }
 
-// localStorage key for apiBase persistence (standalone mode only)
-const ARTEMIS_API_BASE_KEY = "ARTEMIS_API_BASE";
+// Determine API base dynamically based on host
+// If running on artemis-hub.replit.app, use same-origin (empty string)
+// If running on Hunt domain, use own origin
+const host = window.location.host;
+const isOnHub = host.includes("artemis-hub");
 
-// Initialize from query params
-const qp = new URLSearchParams(window.location.search);
-const embeddedMode = qp.get("embed") === "1";
-const apiBaseFromQuery = qp.get("apiBase");
+// Set apiBase: empty for same-origin on Hub, or own origin for standalone
+const apiBase = isOnHub ? "" : window.location.origin;
+window.__ARTEMIS_API_BASE__ = apiBase;
+window.__ARTEMIS_EMBEDDED_MODE__ = isOnHub;
 
-// Store embeddedMode flag globally
-window.__ARTEMIS_EMBEDDED_MODE__ = embeddedMode;
-
-console.log("[HUNT EMBED] embeddedMode=", embeddedMode);
-console.log("[HUNT EMBED] apiBase(query)=", apiBaseFromQuery);
-
-if (embeddedMode) {
-  // Embedded mode: only use in-memory, no localStorage
-  if (apiBaseFromQuery) {
-    window.__ARTEMIS_API_BASE__ = apiBaseFromQuery;
-    console.log("[HUNT EMBED] apiBase set from query (in-memory only)");
-  }
-} else {
-  // Standalone mode: use localStorage fallback
-  const apiBaseFromStorage = localStorage.getItem(ARTEMIS_API_BASE_KEY);
-  if (apiBaseFromQuery) {
-    localStorage.setItem(ARTEMIS_API_BASE_KEY, apiBaseFromQuery);
-    window.__ARTEMIS_API_BASE__ = apiBaseFromQuery;
-    console.log("[HUNT CONFIG] apiBase from query:", apiBaseFromQuery);
-  } else if (apiBaseFromStorage) {
-    window.__ARTEMIS_API_BASE__ = apiBaseFromStorage;
-    console.log("[HUNT CONFIG] apiBase from localStorage:", apiBaseFromStorage);
-  }
-}
-
-console.log("[HUNT EMBED] apiBase(memory)=", window.__ARTEMIS_API_BASE__);
+console.log("[API BASE] host=", host);
+console.log("[API BASE] isOnHub=", isOnHub);
+console.log("[API BASE] apiBase=", apiBase || "(same-origin)");
 
 // Pages
 import Home from "@/pages/Home";
@@ -87,20 +67,13 @@ function Router() {
 }
 
 function App() {
-  // Listen for postMessage from parent (Hub) to set apiBase
+  // Listen for postMessage from parent (Hub) - optional override
   useEffect(() => {
     const handleMessage = (event: MessageEvent) => {
       const data = event.data;
       if (data && data.type === "ARTEMIS_CONFIG" && typeof data.apiBase === "string") {
-        // In embedded mode, only store in-memory
-        if (window.__ARTEMIS_EMBEDDED_MODE__) {
-          window.__ARTEMIS_API_BASE__ = data.apiBase;
-          console.log("[HUNT EMBED] received apiBase via postMessage (in-memory):", data.apiBase);
-        } else {
-          localStorage.setItem(ARTEMIS_API_BASE_KEY, data.apiBase);
-          window.__ARTEMIS_API_BASE__ = data.apiBase;
-          console.log("[HUNT CONFIG] received apiBase via postMessage:", data.apiBase);
-        }
+        window.__ARTEMIS_API_BASE__ = data.apiBase;
+        console.log("[API BASE] received apiBase via postMessage:", data.apiBase);
       }
     };
     window.addEventListener("message", handleMessage);

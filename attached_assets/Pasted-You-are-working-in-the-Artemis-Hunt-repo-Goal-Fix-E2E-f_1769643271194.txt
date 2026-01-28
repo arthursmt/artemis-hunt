@@ -1,0 +1,35 @@
+You are working in the Artemis Hunt repo.
+
+Goal: Fix E2E flow when Hunt runs inside Artemis Hub (artemis-hub.replit.app/hunt). Right now the browser POSTs to https://artemis-hunting--...replit.app/api/proposals/submit causing CORS and bypassing Hub forwarding. We must make embedded Hunt use SAME-ORIGIN API (Hub) so the request becomes /api/proposals/submit on artemis-hub.replit.app, which Hub will forward to Arise.
+
+Implement:
+
+1) Dynamic API base URL (client-side):
+- In the Hunt API client (likely client/src/lib/api.ts or similar), stop hardcoding VITE_API_BASE_URL for all contexts.
+- Determine runtime host via window.location.host.
+- If host includes "artemis-hub" (or path is served under artemis-hub.replit.app), set apiBase = "" (empty string) so fetch("/api/proposals/submit") is same-origin.
+- Else (standalone Hunt app on artemis-hunting--...replit.app or .replit.dev), keep using VITE_API_BASE_URL if present, otherwise default to "".
+- Add console logging once at startup:
+  [API BASE] host=<...> apiBase=<...>
+
+2) Submit endpoint usage:
+- Ensure proposal submission uses `${apiBase}/api/proposals/submit` (or just `/api/proposals/submit` when apiBase is "").
+- Add submit debug log right before POST:
+  [SUBMIT] url=<finalUrl> bytes=<payloadBytes> photoCount=<n> memberCount=<n>
+
+3) CORS fallback (server-side, optional but recommended):
+- In the Hunt backend (server index/routes), enable CORS to allow artemis-hub.replit.app as an allowed origin for POST /api/proposals/submit.
+- Keep it restricted: allow only known origins (hub + local dev), not "*", unless you have to.
+- If credentials are not needed, keep credentials=false.
+
+4) After successful submit:
+- Ensure the Under Evaluation list refreshes from the backend source (or at least re-fetches the list) so submitted items show up consistently.
+- If the list is currently local/mock, add a clear label or remove misleading counters, but do not block E2E.
+
+5) Republish:
+- After changes, republish so the Hub embedded route loads the updated Hunt client.
+
+Acceptance criteria:
+A) In Hub embedded Hunt, DevTools Network -> submit Request URL must be https://artemis-hub.replit.app/api/proposals/submit (or /api/proposals/submit), NOT artemis-hunting--... .
+B) Hub debug endpoint https://artemis-hub.replit.app/api/debug/submit-last must show a new log entry after submit.
+C) Arise proposals endpoint /api/gate/proposals?stage=DOC_REVIEW must increase count after submit.

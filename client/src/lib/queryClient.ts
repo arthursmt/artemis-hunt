@@ -11,23 +11,21 @@ export function getBaseUrl(): string {
   return window.location.origin;
 }
 
-export function getEnvironmentInfo(): { isDev: boolean; baseUrl: string; submitUrl: string; mode: 'hub' | 'standalone'; apiBase: string | undefined; embeddedMode: boolean } {
+export function getEnvironmentInfo(): { isDev: boolean; baseUrl: string; submitUrl: string; mode: 'hub' | 'standalone'; apiBase: string; isOnHub: boolean } {
   const baseUrl = getBaseUrl();
   const isDev = baseUrl.includes('.replit.dev') || baseUrl.includes('localhost');
   
-  // Use explicit apiBase from query param or postMessage (in-memory)
-  const apiBase = (window as any).__ARTEMIS_API_BASE__ as string | undefined;
-  const embeddedMode = (window as any).__ARTEMIS_EMBEDDED_MODE__ === true;
+  // Get apiBase from global (set in App.tsx based on host)
+  const apiBase = (window as any).__ARTEMIS_API_BASE__ as string || "";
+  const isOnHub = (window as any).__ARTEMIS_EMBEDDED_MODE__ === true;
   
-  // Mode: embedded uses apiBase, standalone uses own origin
-  const mode = embeddedMode ? 'hub' : 'standalone';
+  // Mode: Hub (same-origin) or standalone
+  const mode = isOnHub ? 'hub' : 'standalone';
   
-  // Compute submit URL based on mode
-  const submitUrl = embeddedMode && apiBase
-    ? `${apiBase}/api/proposals/submit`
-    : `${window.location.origin}/api/proposals/submit`;
+  // Compute submit URL: apiBase + path (empty apiBase = same-origin)
+  const submitUrl = `${apiBase}/api/proposals/submit`;
   
-  return { isDev, baseUrl, submitUrl, mode, apiBase, embeddedMode };
+  return { isDev, baseUrl, submitUrl, mode, apiBase, isOnHub };
 }
 
 export async function apiRequest(
