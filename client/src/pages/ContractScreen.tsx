@@ -261,11 +261,19 @@ export default function ContractScreen() {
   };
   
   const handleConfirmSubmit = async (e: React.MouseEvent) => {
+    // FIRST LINE: log that click was received
+    console.log("[CONFIRM SUBMIT CLICK] handler invoked");
+    
     // Prevent any form submission or navigation
     e.preventDefault();
     e.stopPropagation();
     
-    if (!proposalId || !proposal) return;
+    console.log("[CONFIRM SUBMIT CLICK] after preventDefault");
+    
+    if (!proposalId || !proposal) {
+      console.log("[CONFIRM SUBMIT CLICK] BLOCKED: missing proposalId or proposal");
+      return;
+    }
     
     setIsSubmitting(true);
     
@@ -661,6 +669,7 @@ export default function ContractScreen() {
           </DialogHeader>
           <DialogFooter className="gap-2">
             <Button 
+              type="button"
               variant="outline" 
               onClick={() => setConfirmModalOpen(false)}
               disabled={isSubmitting}
@@ -668,15 +677,18 @@ export default function ContractScreen() {
             >
               Cancel
             </Button>
-            <Button 
+            <button
               type="button"
-              onClick={handleConfirmSubmit}
+              onClick={(e) => {
+                console.log("[CONFIRM BTN] raw click event");
+                handleConfirmSubmit(e);
+              }}
               disabled={isSubmitting}
-              className="bg-green-600 hover:bg-green-700"
+              className="inline-flex items-center justify-center rounded-md px-4 py-2 text-sm font-medium bg-green-600 hover:bg-green-700 text-white disabled:opacity-50"
               data-testid="btn-confirm-submit"
             >
               {isSubmitting ? "Submitting..." : "Confirm Submit"}
-            </Button>
+            </button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
