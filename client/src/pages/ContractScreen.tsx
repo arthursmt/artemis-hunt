@@ -260,12 +260,35 @@ export default function ContractScreen() {
     setConfirmModalOpen(true);
   };
   
-  const handleConfirmSubmit = async () => {
+  const handleConfirmSubmit = async (e: React.MouseEvent) => {
+    // Prevent any form submission or navigation
+    e.preventDefault();
+    e.stopPropagation();
+    
     if (!proposalId || !proposal) return;
     
     setIsSubmitting(true);
     
     try {
+      // Get apiBase from global (set in App.tsx based on host/query detection)
+      const apiBase = window.__ARTEMIS_API_BASE__;
+      const isEmbedded = window.__ARTEMIS_EMBEDDED_MODE__ === true;
+      
+      console.log("[EMBED SUBMIT] isEmbedded=", isEmbedded);
+      console.log("[EMBED SUBMIT] apiBase=", apiBase);
+      
+      // HARD BLOCK: if embedded but no apiBase, do NOT fallback
+      if (isEmbedded && !apiBase) {
+        console.error("[EMBED SUBMIT] BLOCKED: embedded mode but missing apiBase");
+        toast({
+          title: "Configuration Error",
+          description: "Embedded mode misconfigured: missing apiBase from Hub.",
+          variant: "destructive",
+        });
+        setIsSubmitting(false);
+        return;
+      }
+      
       // Strip optional photos from payload to reduce size
       const strippedMembers = proposal.data.group.members.map(member => {
         const evidence = member.evidence || {};
@@ -295,37 +318,32 @@ export default function ContractScreen() {
         }
       };
       
-      // Log payload size before submit
-      const payloadBytes = new Blob([JSON.stringify(minimalPayload)]).size;
-      const photoCount = strippedMembers.reduce((count, m) => {
-        const ev = m.evidence || {};
-        return count + Object.keys(ev).filter(k => ev[k]?.uri).length;
-      }, 0);
-      
-      // Get apiBase from global (set in App.tsx based on host detection)
-      // On Hub: apiBase = "" (same-origin), on Hunt: apiBase = Hunt origin
-      const apiBase = window.__ARTEMIS_API_BASE__ || "";
-      const isOnHub = window.__ARTEMIS_EMBEDDED_MODE__ === true;
-      
-      // Compute target URL: apiBase + path (empty = same-origin for Hub)
-      const targetUrl = `${apiBase}/api/proposals/submit`;
-      
-      console.log("[SUBMIT] url=" + targetUrl + " bytes=" + payloadBytes + " photoCount=" + photoCount + " memberCount=" + strippedMembers.length);
-      
+      // Prepare submission payload
       const submissionPayload = {
         proposalId,
         payload: minimalPayload
       };
       
+      const bodyString = JSON.stringify(submissionPayload);
+      const payloadBytes = bodyString.length;
+      const photoCount = strippedMembers.reduce((count, m) => {
+        const ev = m.evidence || {};
+        return count + Object.keys(ev).filter(k => ev[k]?.uri).length;
+      }, 0);
+      
+      // Compute target URL
+      const targetUrl = `${apiBase || ""}/api/proposals/submit`;
+      
+      console.log("[EMBED SUBMIT] POST", targetUrl, { bytes: payloadBytes, photoCount, memberCount: strippedMembers.length });
+      
       // Submit to configured endpoint (Hub/Arise in production, local in dev)
       const res = await fetch(targetUrl, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(submissionPayload),
-        credentials: "include",
+        body: bodyString,
       });
       
-      console.log("[HUNT SUBMIT] status=" + res.status);
+      console.log("[EMBED SUBMIT] response status=", res.status);
       
       if (!res.ok) {
         const text = await res.text();
@@ -651,6 +669,7 @@ export default function ContractScreen() {
               Cancel
             </Button>
             <Button 
+              type="button"
               onClick={handleConfirmSubmit}
               disabled={isSubmitting}
               className="bg-green-600 hover:bg-green-700"

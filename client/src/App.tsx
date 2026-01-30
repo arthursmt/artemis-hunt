@@ -14,19 +14,38 @@ declare global {
   }
 }
 
-// Determine API base dynamically based on host
-// If running on artemis-hub.replit.app, use same-origin (empty string)
-// If running on Hunt domain, use own origin
-const host = window.location.host;
-const isOnHub = host.includes("artemis-hub");
+// Check for embedded mode via query param
+const qp = new URLSearchParams(window.location.search);
+const embedParam = qp.get("embed");
+const apiBaseParam = qp.get("apiBase");
+const isEmbedded = embedParam === "1";
 
-// Set apiBase: empty for same-origin on Hub, or own origin for standalone
-const apiBase = isOnHub ? "" : window.location.origin;
+// Determine API base:
+// - If ?embed=1 with ?apiBase=..., use that apiBase (Hub mode)
+// - If host includes "artemis-hub", use same-origin (empty string)
+// - Otherwise use own origin (standalone Hunt)
+const host = window.location.host;
+const isOnHub = host.includes("artemis-hub") || isEmbedded;
+
+let apiBase: string;
+if (isEmbedded && apiBaseParam) {
+  // Embedded mode with explicit apiBase from Hub
+  apiBase = apiBaseParam;
+} else if (host.includes("artemis-hub")) {
+  // Running directly on Hub domain - same-origin
+  apiBase = "";
+} else {
+  // Standalone Hunt - use own origin
+  apiBase = window.location.origin;
+}
+
 window.__ARTEMIS_API_BASE__ = apiBase;
-window.__ARTEMIS_EMBEDDED_MODE__ = isOnHub;
+window.__ARTEMIS_EMBEDDED_MODE__ = isEmbedded;
 
 console.log("[API BASE] host=", host);
-console.log("[API BASE] isOnHub=", isOnHub);
+console.log("[API BASE] embed=", embedParam);
+console.log("[API BASE] apiBaseParam=", apiBaseParam);
+console.log("[API BASE] isEmbedded=", isEmbedded);
 console.log("[API BASE] apiBase=", apiBase || "(same-origin)");
 
 // Pages
