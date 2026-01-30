@@ -275,6 +275,52 @@ export default function ContractScreen() {
       return;
     }
     
+    // ========== PRE-SUBMIT CHECKLIST ==========
+    const validationErrors: string[] = [];
+    
+    // 1. Validate groupId
+    const groupId = proposal.groupId || proposal.data?.group?.groupId;
+    if (!groupId || groupId.trim() === "") {
+      validationErrors.push("groupId ausente");
+    }
+    
+    // 2. Validate members array
+    const members = proposal.data?.group?.members;
+    if (!members || !Array.isArray(members) || members.length === 0) {
+      validationErrors.push("members vazio ou ausente");
+    }
+    
+    // 3. Validate leader has name (firstName required)
+    if (members && members.length > 0) {
+      const leader = members.find((m: any) => m.id === proposal.data.group.leaderId) || members[0];
+      if (!leader?.firstName || leader.firstName.trim() === "") {
+        validationErrors.push("nome do líder ausente");
+      }
+      
+      // 4. Validate mandatory photo (clientSelfie) for each member
+      for (let i = 0; i < members.length; i++) {
+        const member = members[i];
+        const selfie = member.evidence?.clientSelfie;
+        if (!selfie?.uri) {
+          validationErrors.push(`clientSelfie ausente para ${member.firstName || `membro ${i + 1}`}`);
+        }
+      }
+    }
+    
+    // If validation failed, show error and block submit
+    if (validationErrors.length > 0) {
+      console.error("[PRE-SUBMIT] Validation failed:", validationErrors);
+      toast({
+        title: "Não é possível enviar",
+        description: validationErrors.join("; "),
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    console.log("[PRE-SUBMIT] Validation passed");
+    // ========== END PRE-SUBMIT CHECKLIST ==========
+    
     setIsSubmitting(true);
     
     try {
@@ -297,10 +343,9 @@ export default function ContractScreen() {
         return;
       }
       
-      // Strip optional photos from payload to reduce size
-      const strippedMembers = proposal.data.group.members.map(member => {
+      // Strip optional photos from payload to reduce size (keep only photos with data)
+      const strippedMembers = members!.map((member: any) => {
         const evidence = member.evidence || {};
-        // Only keep photos that have actual data
         const strippedEvidence: Record<string, any> = {};
         for (const [key, value] of Object.entries(evidence)) {
           const evidenceItem = value as { uri?: string } | null;
@@ -314,35 +359,47 @@ export default function ContractScreen() {
         };
       });
       
-      const minimalPayload = {
+      // Build complete payload with groupId and members at payload level
+      const fullPayload = {
         ...proposal,
         status: "under_evaluation",
+        groupId: groupId,
+        members: strippedMembers,
         data: {
           ...proposal.data,
           group: {
             ...proposal.data.group,
+            groupId: groupId,
             members: strippedMembers
           }
         }
       };
       
-      // Prepare submission payload
+      // Final submission payload
       const submissionPayload = {
         proposalId,
-        payload: minimalPayload
+        payload: fullPayload
       };
       
       const bodyString = JSON.stringify(submissionPayload);
       const payloadBytes = bodyString.length;
-      const photoCount = strippedMembers.reduce((count, m) => {
+      const photoCount = strippedMembers.reduce((count: number, m: any) => {
         const ev = m.evidence || {};
         return count + Object.keys(ev).filter(k => ev[k]?.uri).length;
       }, 0);
       
-      // Compute target URL
-      const targetUrl = `${apiBase || ""}/api/proposals/submit`;
+      // Compute target URL based on embedded mode
+      const targetUrl = isEmbedded ? `${apiBase}/api/proposals/submit` : "/api/proposals/submit";
       
-      console.log("[EMBED SUBMIT] POST", targetUrl, { bytes: payloadBytes, photoCount, memberCount: strippedMembers.length });
+      // Debug log (dev only style)
+      console.log("[SUBMIT OUTBOUND]", {
+        apiBase: apiBase || "(local)",
+        url: targetUrl,
+        proposalId,
+        groupId,
+        membersCount: strippedMembers.length,
+        payloadKeys: Object.keys(fullPayload)
+      });
       
       // Submit to configured endpoint (Hub/Arise in production, local in dev)
       const res = await fetch(targetUrl, {
