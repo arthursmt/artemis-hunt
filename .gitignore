@@ -25,3 +25,8 @@ coverage/
 # OS
 .DS_Store
 Thumbs.db
+
+# accidental files from copy/paste
+-sb
+Configuration forms for
+canonical v1 payload on submit"
