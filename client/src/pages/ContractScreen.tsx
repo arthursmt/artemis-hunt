@@ -5,19 +5,30 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
-import { 
-  Dialog, 
-  DialogContent, 
-  DialogHeader, 
-  DialogTitle, 
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
   DialogDescription,
-  DialogFooter 
+  DialogFooter,
 } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, FileText, Check, AlertCircle, Pen, Trash2, User, Calendar, DollarSign, Hash } from "lucide-react";
-import { useProposalStore, Member, LoanDetails, ContractSignature } from "@/lib/proposalStore";
+import {
+  ArrowLeft,
+  FileText,
+  Check,
+  AlertCircle,
+  Pen,
+  Trash2,
+  User,
+  Calendar,
+  DollarSign,
+  Hash,
+} from "lucide-react";
+import { useProposalStore, Member, ContractSignature } from "@/lib/proposalStore";
 import { isProposalCompleteWithEvidence } from "@/lib/completionHelpers";
-import { apiRequest, queryClient, getEnvironmentInfo } from "@/lib/queryClient";
+import { queryClient, getEnvironmentInfo } from "@/lib/queryClient";
 import SignatureCanvas from "react-signature-canvas";
 import { cn } from "@/lib/utils";
 
@@ -32,6 +43,12 @@ function formatCurrency(value: number): string {
 function parseLoanValue(loanValue: string): number {
   const cleaned = loanValue.replace(/[$,]/g, "");
   return parseFloat(cleaned) || 0;
+}
+
+function toMemberId(value: unknown, index: number): string {
+  if (typeof value === "string" && value.trim()) return value.trim();
+  if (typeof value === "number" && Number.isFinite(value)) return String(value);
+  return `M${index + 1}`;
 }
 
 const CONTRACT_TEXT = `
@@ -118,23 +135,23 @@ export default function ContractScreen() {
   const params = useParams();
   const { toast } = useToast();
   const { getProposalById, updateProposal } = useProposalStore();
-  
+
   const proposalId = params.id;
   const proposal = proposalId ? getProposalById(proposalId) : null;
   const group = proposal?.data.group;
   const loanDetailsByMember = proposal?.data.loanDetailsByMember || {};
-  
+
   const [contractRead, setContractRead] = useState(false);
   const [agreementChecked, setAgreementChecked] = useState(false);
   const [confirmModalOpen, setConfirmModalOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  
+
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const signatureRefs = useRef<Record<number, SignaturePadRef | null>>({});
-  
+
   // Check if proposal is complete
   const isComplete = group ? isProposalCompleteWithEvidence(group, loanDetailsByMember) : false;
-  
+
   // Redirect if proposal is incomplete
   useEffect(() => {
     if (proposalId && group && !isComplete) {
@@ -146,65 +163,63 @@ export default function ContractScreen() {
       setLocation(`/product-config/${proposalId}`);
     }
   }, [proposalId, group, isComplete, setLocation, toast]);
-  
+
   // Check if contract was previously read
   useEffect(() => {
     if (group?.contractReadAt) {
       setContractRead(true);
     }
   }, [group?.contractReadAt]);
-  
+
   const handleScroll = useCallback(() => {
     const container = scrollContainerRef.current;
     if (!container) return;
-    
+
     const { scrollTop, scrollHeight, clientHeight } = container;
     const threshold = 10;
-    
+
     if (scrollTop + clientHeight >= scrollHeight - threshold) {
       setContractRead(true);
-      
+
       // Persist contract read state
       if (proposalId && group && !group.contractReadAt) {
-        updateProposal(proposalId, prev => ({
+        updateProposal(proposalId, (prev) => ({
           ...prev,
           data: {
             ...prev.data,
             group: {
               ...prev.data.group,
-              contractReadAt: new Date().toISOString()
-            }
-          }
+              contractReadAt: new Date().toISOString(),
+            },
+          },
         }));
       }
     }
   }, [proposalId, group, updateProposal]);
-  
+
   const handleClearSignature = (memberId: number) => {
     const sigRef = signatureRefs.current[memberId];
     if (sigRef) {
       sigRef.clear();
     }
-    
+
     // Also clear saved signature
     if (proposalId) {
-      updateProposal(proposalId, prev => ({
+      updateProposal(proposalId, (prev) => ({
         ...prev,
         data: {
           ...prev.data,
           group: {
             ...prev.data.group,
-            members: prev.data.group.members.map(m => 
-              m.id === memberId 
-                ? { ...m, signatures: { ...m.signatures, contractSignature: null } }
-                : m
-            )
-          }
-        }
+            members: prev.data.group.members.map((m) =>
+              m.id === memberId ? { ...m, signatures: { ...m.signatures, contractSignature: null } } : m
+            ),
+          },
+        },
       }));
     }
   };
-  
+
   const handleSaveSignature = (member: Member) => {
     const sigRef = signatureRefs.current[member.id];
     if (!sigRef || sigRef.isEmpty()) {
@@ -215,88 +230,84 @@ export default function ContractScreen() {
       });
       return;
     }
-    
+
     const loanDetails = loanDetailsByMember[member.id];
     const loanAmount = parseLoanValue(loanDetails?.loanValue || "0");
-    
+
     const signature: ContractSignature = {
       dataUrl: sigRef.toDataURL(),
       signedAt: new Date().toISOString(),
       signerName: `${member.firstName} ${member.lastName}`,
       loanAmount,
       firstPaymentDate: loanDetails?.firstPaymentDate || "",
-      installments: loanDetails?.installments || 0
+      installments: loanDetails?.installments || 0,
     };
-    
+
     if (proposalId) {
-      updateProposal(proposalId, prev => ({
+      updateProposal(proposalId, (prev) => ({
         ...prev,
         data: {
           ...prev.data,
           group: {
             ...prev.data.group,
-            members: prev.data.group.members.map(m => 
-              m.id === member.id 
-                ? { ...m, signatures: { ...m.signatures, contractSignature: signature } }
-                : m
-            )
-          }
-        }
+            members: prev.data.group.members.map((m) =>
+              m.id === member.id ? { ...m, signatures: { ...m.signatures, contractSignature: signature } } : m
+            ),
+          },
+        },
       }));
-      
+
       toast({
         title: "Signature Saved",
         description: `${member.firstName}'s signature has been saved.`,
       });
     }
   };
-  
+
   // Check if all members have signed
-  const allMembersSigned = group?.members.every(m => m.signatures?.contractSignature) ?? false;
+  const allMembersSigned = group?.members.every((m) => m.signatures?.contractSignature) ?? false;
   const canSubmit = contractRead && agreementChecked && allMembersSigned;
-  
+
   const handleSubmitClick = () => {
     if (!canSubmit) return;
     setConfirmModalOpen(true);
   };
-  
+
   const handleConfirmSubmit = async (e: React.MouseEvent) => {
-    // FIRST LINE: log that click was received
     console.log("[CONFIRM SUBMIT CLICK] handler invoked");
-    
-    // Prevent any form submission or navigation
+
     e.preventDefault();
     e.stopPropagation();
-    
+
     console.log("[CONFIRM SUBMIT CLICK] after preventDefault");
-    
+
     if (!proposalId || !proposal) {
       console.log("[CONFIRM SUBMIT CLICK] BLOCKED: missing proposalId or proposal");
       return;
     }
-    
+
     // ========== PRE-SUBMIT CHECKLIST ==========
     const validationErrors: string[] = [];
-    
+
     // 1. Validate groupId
     const groupId = proposal.groupId || proposal.data?.group?.groupId;
     if (!groupId || groupId.trim() === "") {
       validationErrors.push("groupId ausente");
     }
-    
+
     // 2. Validate members array
     const members = proposal.data?.group?.members;
     if (!members || !Array.isArray(members) || members.length === 0) {
       validationErrors.push("members vazio ou ausente");
     }
-    
+
     // 3. Validate leader has name (firstName required)
     if (members && members.length > 0) {
       const leader = members.find((m: any) => m.id === proposal.data.group.leaderId) || members[0];
       if (!leader?.firstName || leader.firstName.trim() === "") {
         validationErrors.push("nome do líder ausente");
       }
-      
+
       // 4. Validate mandatory photo (clientSelfie) for each member
       for (let i = 0; i < members.length; i++) {
         const member = members[i];
@@ -306,8 +317,7 @@ export default function ContractScreen() {
         }
       }
     }
-    
-    // If validation failed, show error and block submit
+
     if (validationErrors.length > 0) {
       console.error("[PRE-SUBMIT] Validation failed:", validationErrors);
       toast({
@@ -317,21 +327,19 @@ export default function ContractScreen() {
       });
       return;
     }
-    
+
     console.log("[PRE-SUBMIT] Validation passed");
     // ========== END PRE-SUBMIT CHECKLIST ==========
-    
+
     setIsSubmitting(true);
-    
+
     try {
-      // Get apiBase from global (set in App.tsx based on host/query detection)
-      const apiBase = window.__ARTEMIS_API_BASE__;
-      const isEmbedded = window.__ARTEMIS_EMBEDDED_MODE__ === true;
-      
+      const apiBase = (window as any).__ARTEMIS_API_BASE__;
+      const isEmbedded = (window as any).__ARTEMIS_EMBEDDED_MODE__ === true;
+
       console.log("[EMBED SUBMIT] isEmbedded=", isEmbedded);
       console.log("[EMBED SUBMIT] apiBase=", apiBase);
-      
-      // HARD BLOCK: if embedded but no apiBase, do NOT fallback
+
       if (isEmbedded && !apiBase) {
         console.error("[EMBED SUBMIT] BLOCKED: embedded mode but missing apiBase");
         toast({
@@ -342,9 +350,15 @@ export default function ContractScreen() {
         setIsSubmitting(false);
         return;
       }
-      
-      // Strip optional photos from payload to reduce size (keep only photos with data)
-      const strippedMembers = members!.map((member: any) => {
+
+      // -----------------------------
+      // CANONICAL V1 PAYLOAD BUILDING
+      // -----------------------------
+      // Goal: emit canonical types on submit:
+      // - members[].memberId: string
+      // - members[].loanAmount (or requestedAmount): number
+      // Also: keep evidence small by stripping empty items.
+      const strippedMembers = members!.map((member: any, index: number) => {
         const evidence = member.evidence || {};
         const strippedEvidence: Record<string, any> = {};
         for (const [key, value] of Object.entries(evidence)) {
@@ -353,86 +367,126 @@ export default function ContractScreen() {
             strippedEvidence[key] = evidenceItem;
           }
         }
+
+        const loanDetails = loanDetailsByMember[member.id];
+        const amountNumber = parseLoanValue(loanDetails?.loanValue || "0");
+
+        const signatureDataUrl =
+          member?.signatures?.contractSignature?.dataUrl ||
+          member?.signatures?.contractSignature ||
+          undefined;
+
         return {
-          ...member,
-          evidence: Object.keys(strippedEvidence).length > 0 ? strippedEvidence : undefined
+          memberId: toMemberId(member.memberId ?? member.id, index),
+
+          // keep both name styles for compatibility
+          name: member.name,
+          firstName: member.firstName,
+          lastName: member.lastName,
+
+          // canonical numeric amounts
+          loanAmount: amountNumber,
+          requestedAmount: amountNumber,
+
+          phone: member.phone,
+          idNumber: member.idNumber,
+
+          // keep only photos that exist (small)
+          evidence: Object.keys(strippedEvidence).length > 0 ? strippedEvidence : undefined,
+
+          // optional schema fields in Arise
+          evidencePhotos: undefined,
+          signature: typeof signatureDataUrl === "string" ? signatureDataUrl : undefined,
+
+          isLeader: member.id === proposal.data.group.leaderId || member.isLeader,
         };
       });
-      
-      // Build complete payload with groupId and members at payload level
-      const fullPayload = {
-        ...proposal,
-        status: "under_evaluation",
+
+      const leader = strippedMembers.find((m: any) => m.isLeader) || strippedMembers[0];
+      const totalAmount = strippedMembers.reduce((sum: number, m: any) => sum + (m.loanAmount || 0), 0);
+
+      const canonicalPayload = {
         groupId: groupId,
+        groupName: group?.groupName,
+        leaderName:
+          group?.leaderName ||
+          (leader?.firstName || leader?.lastName
+            ? `${leader?.firstName || ""} ${leader?.lastName || ""}`.trim()
+            : leader?.name) ||
+          "Unknown",
+        leaderPhone: group?.leaderPhone,
         members: strippedMembers,
-        data: {
-          ...proposal.data,
-          group: {
-            ...proposal.data.group,
-            groupId: groupId,
-            members: strippedMembers
-          }
-        }
+        totalAmount,
+        contractText: CONTRACT_TEXT,
+        evidencePhotos: undefined,
+        formData: {
+          proposalId,
+          embedded: isEmbedded,
+        },
       };
-      
-      // Final submission payload
+
       const submissionPayload = {
         proposalId,
-        payload: fullPayload
+        payload: canonicalPayload,
       };
-      
+
       const bodyString = JSON.stringify(submissionPayload);
       const payloadBytes = bodyString.length;
       const photoCount = strippedMembers.reduce((count: number, m: any) => {
         const ev = m.evidence || {};
-        return count + Object.keys(ev).filter(k => ev[k]?.uri).length;
+        return count + Object.keys(ev).filter((k) => ev[k]?.uri).length;
       }, 0);
-      
-      // Compute target URL based on embedded mode
+
       const targetUrl = isEmbedded ? `${apiBase}/api/proposals/submit` : "/api/proposals/submit";
-      
-      // Debug log (dev only style)
+
+      console.log("[HUNT CANONICAL SUBMIT] sample types:", {
+        memberIdType: typeof strippedMembers?.[0]?.memberId,
+        requestedAmountType: typeof strippedMembers?.[0]?.requestedAmount,
+        loanAmountType: typeof strippedMembers?.[0]?.loanAmount,
+        membersCount: strippedMembers.length,
+        totalAmountType: typeof canonicalPayload.totalAmount,
+        payloadBytes,
+        photoCount,
+      });
+
       console.log("[SUBMIT OUTBOUND]", {
         apiBase: apiBase || "(local)",
         url: targetUrl,
         proposalId,
         groupId,
         membersCount: strippedMembers.length,
-        payloadKeys: Object.keys(fullPayload)
+        payloadKeys: Object.keys(canonicalPayload),
       });
-      
-      // Submit to configured endpoint (Hub/Arise in production, local in dev)
+
       const res = await fetch(targetUrl, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: bodyString,
       });
-      
+
       console.log("[EMBED SUBMIT] response status=", res.status);
-      
+
       if (!res.ok) {
         const text = await res.text();
         throw new Error(`${res.status}: ${text}`);
       }
-      
-      // Invalidate submissions cache
+
       queryClient.invalidateQueries({ queryKey: ["/api/proposals/submissions"] });
-      
-      // Update local state
-      updateProposal(proposalId, prev => ({
+
+      updateProposal(proposalId, (prev) => ({
         ...prev,
-        status: "under_evaluation"
+        status: "under_evaluation",
       }));
-      
+
       toast({
         title: "Proposal Submitted",
         description: "Your proposal has been submitted successfully for evaluation.",
       });
-      
+
       setConfirmModalOpen(false);
       setLocation("/under-evaluation");
-      
     } catch (error) {
+      console.error("[SUBMIT ERROR]", error);
       toast({
         title: "Submission Failed",
         description: "Failed to submit the proposal. Please try again.",
@@ -442,7 +496,7 @@ export default function ContractScreen() {
       setIsSubmitting(false);
     }
   };
-  
+
   if (!proposal || !group) {
     return (
       <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4 text-center font-display">
@@ -458,19 +512,23 @@ export default function ContractScreen() {
       </div>
     );
   }
-  
+
   const envInfo = getEnvironmentInfo();
-  
+
   return (
     <div className="min-h-screen bg-slate-50 pb-20 font-display">
       {/* Debug Banner */}
-      <div className={cn(
-        "text-xs px-4 py-1 text-center font-mono",
-        envInfo.isDev ? "bg-yellow-100 text-yellow-800" : "bg-green-100 text-green-800"
-      )} data-testid="env-debug-banner">
-        {envInfo.mode.toUpperCase()} | host={window.location.host} | apiBase={envInfo.apiBase || '(same-origin)'} | Submit: {envInfo.submitUrl}
+      <div
+        className={cn(
+          "text-xs px-4 py-1 text-center font-mono",
+          envInfo.isDev ? "bg-yellow-100 text-yellow-800" : "bg-green-100 text-green-800"
+        )}
+        data-testid="env-debug-banner"
+      >
+        {envInfo.mode.toUpperCase()} | host={window.location.host} | apiBase={envInfo.apiBase || "(same-origin)"} |
+        Submit: {envInfo.submitUrl}
       </div>
-      
+
       <header className="bg-white border-b sticky top-0 z-50">
         <div className="max-w-5xl mx-auto px-4 h-16 flex items-center justify-between">
           <div className="flex items-center gap-4">
@@ -487,13 +545,16 @@ export default function ContractScreen() {
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <Badge variant={allMembersSigned ? "default" : "secondary"} className={allMembersSigned ? "bg-green-500" : ""}>
-              {group.members.filter(m => m.signatures?.contractSignature).length}/{group.members.length} Signed
+            <Badge
+              variant={allMembersSigned ? "default" : "secondary"}
+              className={allMembersSigned ? "bg-green-500" : ""}
+            >
+              {group.members.filter((m) => m.signatures?.contractSignature).length}/{group.members.length} Signed
             </Badge>
           </div>
         </div>
       </header>
-      
+
       <main className="max-w-5xl mx-auto px-4 py-6 space-y-6">
         {/* Contract Text Section */}
         <Card className="border-none shadow-xl bg-white">
@@ -504,7 +565,7 @@ export default function ContractScreen() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div 
+            <div
               ref={scrollContainerRef}
               onScroll={handleScroll}
               className="h-[300px] overflow-y-auto border rounded-lg p-4 bg-slate-50 font-mono text-sm whitespace-pre-wrap"
@@ -512,7 +573,7 @@ export default function ContractScreen() {
             >
               {CONTRACT_TEXT}
             </div>
-            
+
             {!contractRead && (
               <p className="text-sm text-amber-600 mt-3 flex items-center gap-2">
                 <AlertCircle className="w-4 h-4" />
@@ -527,7 +588,7 @@ export default function ContractScreen() {
             )}
           </CardContent>
         </Card>
-        
+
         {/* Agreement Checkbox */}
         <Card className="border-none shadow-xl bg-white">
           <CardContent className="p-6">
@@ -539,19 +600,13 @@ export default function ContractScreen() {
                 disabled={!contractRead}
                 data-testid="checkbox-agreement"
               />
-              <Label 
-                htmlFor="agreement" 
-                className={cn(
-                  "text-sm cursor-pointer",
-                  !contractRead && "text-slate-400"
-                )}
-              >
+              <Label htmlFor="agreement" className={cn("text-sm cursor-pointer", !contractRead && "text-slate-400")}>
                 I confirm all clients have read and agree to the terms and conditions.
               </Label>
             </div>
           </CardContent>
         </Card>
-        
+
         {/* Signature Section */}
         <Card className="border-none shadow-xl bg-white">
           <CardHeader>
@@ -565,9 +620,9 @@ export default function ContractScreen() {
               const loanDetails = loanDetailsByMember[member.id];
               const hasSavedSignature = !!member.signatures?.contractSignature;
               const savedSignature = member.signatures?.contractSignature;
-              
+
               return (
-                <div 
+                <div
                   key={member.id}
                   className={cn(
                     "border rounded-lg p-4 space-y-4",
@@ -585,7 +640,9 @@ export default function ContractScreen() {
                         <p className="font-semibold text-slate-900">
                           {index + 1}. {member.firstName} {member.lastName}
                           {member.id === group.leaderId && (
-                            <Badge variant="secondary" className="ml-2 text-xs">Leader</Badge>
+                            <Badge variant="secondary" className="ml-2 text-xs">
+                              Leader
+                            </Badge>
                           )}
                         </p>
                       </div>
@@ -597,7 +654,7 @@ export default function ContractScreen() {
                       </Badge>
                     )}
                   </div>
-                  
+
                   {/* Loan Summary */}
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm bg-slate-50 rounded-lg p-3">
                     <div className="flex items-center gap-2">
@@ -628,15 +685,15 @@ export default function ContractScreen() {
                       </div>
                     </div>
                   </div>
-                  
+
                   {/* Signature Pad or Saved Signature */}
                   <div className="space-y-2">
                     <p className="text-sm font-medium text-slate-700">Signature:</p>
-                    
+
                     {hasSavedSignature ? (
                       <div className="border rounded-lg bg-white p-2">
-                        <img 
-                          src={savedSignature?.dataUrl} 
+                        <img
+                          src={savedSignature?.dataUrl}
                           alt={`${member.firstName}'s signature`}
                           className="h-24 w-full object-contain"
                         />
@@ -647,17 +704,19 @@ export default function ContractScreen() {
                     ) : (
                       <div className="border rounded-lg bg-white">
                         <SignatureCanvas
-                          ref={(ref) => { signatureRefs.current[member.id] = ref; }}
+                          ref={(ref) => {
+                            signatureRefs.current[member.id] = ref;
+                          }}
                           canvasProps={{
                             className: "w-full h-24 signature-canvas",
-                            style: { width: "100%", height: "96px" }
+                            style: { width: "100%", height: "96px" },
                           }}
                           backgroundColor="white"
                         />
                       </div>
                     )}
                   </div>
-                  
+
                   {/* Signature Actions */}
                   <div className="flex items-center gap-2">
                     <Button
@@ -687,7 +746,7 @@ export default function ContractScreen() {
             })}
           </CardContent>
         </Card>
-        
+
         {/* Submit Section */}
         <div className="flex items-center justify-between pt-4">
           <div className="text-sm text-slate-500">
@@ -698,14 +757,14 @@ export default function ContractScreen() {
               </span>
             )}
           </div>
-          
+
           <Button
             onClick={handleSubmitClick}
             disabled={!canSubmit}
             className={cn(
               "h-12 px-12 font-bold shadow-xl",
-              canSubmit 
-                ? "bg-green-600 hover:bg-green-700 text-white shadow-green-600/20" 
+              canSubmit
+                ? "bg-green-600 hover:bg-green-700 text-white shadow-green-600/20"
                 : "bg-slate-300 text-slate-500 cursor-not-allowed shadow-none"
             )}
             data-testid="btn-submit-proposal"
@@ -714,7 +773,7 @@ export default function ContractScreen() {
           </Button>
         </div>
       </main>
-      
+
       {/* Confirmation Modal */}
       <Dialog open={confirmModalOpen} onOpenChange={setConfirmModalOpen}>
         <DialogContent className="max-w-md">
@@ -725,9 +784,9 @@ export default function ContractScreen() {
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="gap-2">
-            <Button 
+            <Button
               type="button"
-              variant="outline" 
+              variant="outline"
               onClick={() => setConfirmModalOpen(false)}
               disabled={isSubmitting}
               data-testid="btn-cancel-submit"
