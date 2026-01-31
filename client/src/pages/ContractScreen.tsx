@@ -439,14 +439,13 @@ export default function ContractScreen() {
 
       const targetUrl = isEmbedded ? `${apiBase}/api/proposals/submit` : "/api/proposals/submit";
 
-      console.log("[HUNT CANONICAL SUBMIT] sample types:", {
+      console.log("[HUNT CANONICAL SUBMIT] sample member (first):", {
+        memberId: strippedMembers?.[0]?.memberId,
         memberIdType: typeof strippedMembers?.[0]?.memberId,
+        requestedAmount: strippedMembers?.[0]?.requestedAmount,
         requestedAmountType: typeof strippedMembers?.[0]?.requestedAmount,
+        loanAmount: strippedMembers?.[0]?.loanAmount,
         loanAmountType: typeof strippedMembers?.[0]?.loanAmount,
-        membersCount: strippedMembers.length,
-        totalAmountType: typeof canonicalPayload.totalAmount,
-        payloadBytes,
-        photoCount,
       });
 
       console.log("[SUBMIT OUTBOUND]", {
